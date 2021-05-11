@@ -3,11 +3,9 @@
 #include "pointprocess/RegressionPipeline.h"
 #include "pointprocess/WeightsProducer.h"
 #include "tests/testData.h"
-#include <Eigen/Core>
 
 #include <memory>
 #include <vector>
-#include <fstream>
 #include "csv.h"
 
 void produceCSV_Ig(PointProcessResult& ppRes, bool ig = false){
@@ -81,13 +79,10 @@ void produceCSV(PointProcessResult& ppRes, bool ig = false){
 
 int main()
 {
-    // 12734
-    // 12754
-    // 12755
-
     std::vector<double> events;
-//    io::CSVReader<1> in("../DATA/synthetic/LogNormalSynthetic.csv");
+
     io::CSVReader<1> in("../DATA/synthetic/GaussianSynthetic.csv");
+
     in.read_header(io::ignore_extra_column, "RR");
     double rr;
     while(in.read_row(rr)){

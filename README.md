@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/pointprocess/badge/?version=latest)](https://pointprocess.readthedocs.io/en/latest/?badge=latest)
+
 ![](docs/images/ppbig.png)
 
 This repository contains a `C++` implementation of the `MATLAB` software provided by Riccardo Barbieri and Luca
@@ -17,4 +19,4 @@ and [Boost](https://www.boost.org).
 
 # Documentation
 
-The technical and scientific *documentation* for this repository will be available soon... 
+The technical and scientific *documentation* for this repository is available [here](https://pointprocess.readthedocs.io/en/latest/).
