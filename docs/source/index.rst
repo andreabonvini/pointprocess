@@ -11,30 +11,33 @@ A C++ Library for Point Process analysis.
    license
    help
 
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Installation:
+
+   installdependencies
+   buildwithcmake
+
+
    
 .. toctree::
    :maxdepth: 2
-   :caption: Scientific docs:
+   :caption: Scientific Documentation:
 
    Gradients-and-Hessians
    inhomogenouspoisson
    hazardfunction
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Code Documentation:
 
-Quick Tour
-==================
+   weightsproducer
+   dataset
+   optimizer
+   regressionpipeline
+   spectralanalysis
+   serialize
 
-.. code-block:: c
 
-    #include "pointprocess/InterEventDistributions.h"
-    #include "pointprocess/RegressionPipeline.h"
-    #include "pointprocess/WeightsProducer.h"
-    #include "tests/testData.h"
-    #include <vector>
-
-    int main(){
-        std::vector<double> td = getTestData();
-        auto pip = RegressionPipeline(PointProcessDistributions::InverseGaussian, 9, true);
-        auto fullRes = pip.fullRegression(td.testEvents, 60.0, 0.005, true, 1000, WeightsProducer(0.98));
-        // Serialize...
-	}
