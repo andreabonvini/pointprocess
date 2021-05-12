@@ -229,8 +229,8 @@ public:
             }
             if (!NEWTON_WORKED){
                 GRADIENT_DESCENT_WORKED = false;
-                for (char i = 0; i < 10; i++) {
-                    vars.alpha.setConstant(0.00005 / pow(2.0, (double) i));
+                for (char i = 0; i < 25; i++) {
+                    vars.alpha.setConstant(0.0005 / pow(2.0, (double) i));
                     x = vars.xold - (vars.alpha.array() * vars.gradient.array()).matrix();
                     // Compute new likelihood
                     tmpNegloglikel = computeLikel(x, dataset);
@@ -310,6 +310,10 @@ public:
     }
 
     double computeLikelRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset){
+        // Sigma = x[0]
+        // Theta = x.segment(1,x.size() - 1)
+        // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
+        assert( x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
         return - dataset.eta[dataset.eta.size() - 1] * log(1.0 - computeCDF(x,dataset));
     };
 

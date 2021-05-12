@@ -18,7 +18,7 @@ public:
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
-         startingPoint[0] = 0.03; // sigma0
+         startingPoint[0] = 0.02; // sigma0
          startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
     };
 

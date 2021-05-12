@@ -155,6 +155,7 @@ public:
         std::vector<double> events = events_times;
         double t0 = events_times[0];
         std::transform(events_times.begin(), events_times.end(), events.begin(),[&](auto& value){ return value - t0;});
+
         auto pipelineSetup = getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
                                               maxIter, weightsProducer);
 
@@ -172,7 +173,7 @@ public:
                 return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
             }
             case PointProcessDistributions::LogNormal: {
-                auto optimizer = GaussianOptimizer();
+                auto optimizer = LogNormalOptimizer();
                 auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
