@@ -26,9 +26,10 @@ struct IGRegressionResult : RegressionResult {
                        double lambda,
                        double meanInterval,
                        long nIter,
-                       double kappa_)
-                       : RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter) {
-        kappa = kappa_;
+                       double likelihood,
+                       double kappa)
+                       : RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood) {
+        this->kappa = kappa;
     }
 
 };
@@ -37,9 +38,7 @@ struct IGRegressionResult : RegressionResult {
 class InverseGaussianOptimizer : public BaseOptimizer{
 public:
 
-    explicit InverseGaussianOptimizer(OptimizerSetup setup): BaseOptimizer(setup){
-        distribution = PointProcessDistributions::InverseGaussian;
-    };
+    explicit InverseGaussianOptimizer(): BaseOptimizer(PointProcessDistributions::InverseGaussian){};
 
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Kappa = x[0]
@@ -134,12 +133,12 @@ public:
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // Mus = (dataset.xn * x.segment(1,x.size() - 1))
-        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).minCoeff() < 0.0 ) return INFINITY; // Check constraints.
+        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0.0 ) return INFINITY; // Check constraints.
         return - dataset.eta.dot(
                 (((x[0] / (2.0 * M_PI * dataset.wn.array().pow(3.0))).sqrt().log() - (( x[0] * (dataset.wn - (dataset.xn * x.segment(1,x.size() - 1))).array().pow(2.0))/(2.0 * (dataset.xn * x.segment(1,x.size() - 1)).array().pow(2.0) * dataset.wn.array()))).matrix()));
     };
 
-    std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, unsigned long nIter) override{
+    std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter) override{
 
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -161,6 +160,7 @@ public:
                 (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
                 meanInterval,
                 nIter,
+                computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0),
                 x[0]);
     };
 

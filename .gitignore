@@ -1,6 +1,8 @@
 # Project exclude paths
-/cmake-build-debug/
+cmake-build-debug/
+ext/Google_tests/lib/*
 DATA/*
-.DS_STORE
+.DS_Store
 .idea/*
 docs/build/*
+venv/*

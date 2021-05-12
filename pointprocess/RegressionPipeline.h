@@ -19,7 +19,39 @@
 #include <iostream>
 
 
-static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared_ptr<RegressionResult>>& results, const OptimizerSetup& setup){
+PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
+    /**
+     * This function returns a OptimizerSetup object containing a series of useful parameters, such as:
+     * last_event_index:
+     *     index of the last event within the first time window
+     *     e.g. if events = [0.0, 1.3, 2.1, 3.2, 3.9, 4.5] and window_length = 3.5 then last_event_index = 3
+     *     (since events[3] = 3.2 and events[4] =3.9)
+     * bins:
+     *     total number of bins we can discretize our events in (given our time_resolution)
+     * bins_in_window:
+     *     number of bins in a single time window.
+     **/
+    // Consistency check
+    if (events[ events.size() -1] < windowLength){
+        throw std::invalid_argument("The window length is too wide.");
+    }
+    // Find the index of the last event within window_length
+    unsigned long last_event_index = 0;
+    for(unsigned long index = 0; index < events.size(); index++){
+        if (events[index] > windowLength){
+            last_event_index = index - 1;
+            break;
+        }
+    }
+    // Find total number of time bins
+    auto bins = (unsigned long) std::ceil(events[events.size() -1] / delta);
+    auto bins_in_window = (unsigned long) (windowLength / delta);
+
+    return PipelineSetup(delta, events, rc, hasTheta0_, AR_ORDER_, last_event_index, bins, bins_in_window, maxIter, weightsProducer);
+}
+
+
+static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared_ptr<RegressionResult>>& results, const PipelineSetup& setup){
 
     double currentTime;
     bool eventHappened;
@@ -88,7 +120,6 @@ public:
         this->interEventDistribution = interEventDistribution;
         this->AR_ORDER = AR_ORDER;
         this->hasTheta0 = hasTheta0;
-
     }
 
     [[nodiscard]] PointProcessResult fullRegression(
@@ -124,82 +155,47 @@ public:
         std::vector<double> events = events_times;
         double t0 = events_times[0];
         std::transform(events_times.begin(), events_times.end(), events.begin(),[&](auto& value){ return value - t0;});
-        auto pipelineSetup = getOptimizerSetup(t0, events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
-                                               maxIter, weightsProducer);
+        auto pipelineSetup = getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
+                                              maxIter, weightsProducer);
 
-        // TODO: factorize...
+        // TODO: remove switch statement and factorize...
         switch (this->interEventDistribution) {
             case PointProcessDistributions::InverseGaussian: {
-                auto optimizer = InverseGaussianOptimizer(pipelineSetup);
-                auto results = optimizer.train();
+                auto optimizer = InverseGaussianOptimizer();
+                auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
                 // TODO: compute ksDistance & Co.
                 double percOut = 0.0;
                 double ksDistance = 0.0;
                 double autoCorr = 0.0;
-                return PointProcessResult(results,taus,percOut,ksDistance, pipelineSetup.t0, autoCorr);
+                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
             }
             case PointProcessDistributions::LogNormal: {
-                auto optimizer = GaussianOptimizer(pipelineSetup);
-                auto results = optimizer.train();
+                auto optimizer = GaussianOptimizer();
+                auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
                 // TODO: compute ksDistance & Co.
                 double percOut = 0.0;
                 double ksDistance = 0.0;
                 double autoCorr = 0.0;
-                return PointProcessResult(results,taus,percOut,ksDistance, pipelineSetup.t0, autoCorr);
+                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
             }
             case PointProcessDistributions::Gaussian: {
-                auto optimizer = GaussianOptimizer(pipelineSetup);
-                auto results = optimizer.train();
+                auto optimizer = GaussianOptimizer();
+                auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
                 // TODO: compute ksDistance & Co.
                 double percOut = 0.0;
                 double ksDistance = 0.0;
                 double autoCorr = 0.0;
-                return PointProcessResult(results,taus,percOut,ksDistance, pipelineSetup.t0, autoCorr);
+                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
             }
             default:
                 throw std::logic_error("Please, insert a valid InterEvent distribution.");
 
-        }
-
-
-    }
-
-    [[nodiscard]] std::shared_ptr<IGRegressionResult> singleRegression(const std::vector<double>& events_times, unsigned long maxIter = 1000, WeightsProducer weightsProducer = WeightsProducer()) const{
-
-        switch (this->interEventDistribution) {
-            case PointProcessDistributions::InverseGaussian: {
-//                std::deque<double> et;
-//                for (const auto& e: events_times)
-//                    et.push_back(e);
-//
-//                auto dataset = PointProcessDataset::load(et, AR_ORDER, hasTheta0, weightsProducer, 0.0);
-//                double kappaStart = 1500.0;
-//                auto thetaStart = Eigen::VectorXd(AR_ORDER + hasTheta0);
-//                thetaStart.setConstant(1.0 / double (AR_ORDER + hasTheta0));
-//                auto gradient = Eigen::VectorXd(AR_ORDER + hasTheta0 + 1);
-//                auto hessian =  Eigen::MatrixXd(AR_ORDER + hasTheta0 + 1,AR_ORDER + hasTheta0 + 1);
-//                auto rcGradient = Eigen::VectorXd(AR_ORDER + hasTheta0 + 1);
-//                auto rcHessian = Eigen::MatrixXd(AR_ORDER + hasTheta0 + 1,AR_ORDER + hasTheta0 + 1);
-//                auto vars = igTmpVars(
-//                        gradient,
-//                        hessian,
-//                        rcGradient,
-//                        rcHessian,
-//                        &rcData,
-//                        &rcTmpData
-//                );
-//                return optimizeNewton(dataset, false, maxIter, kappaStart, thetaStart, vars);
-            }
-            case LogNormal:
-                throw std::logic_error("LogNormal singleRegression hasn't been implemented yet!");
-            case Gaussian:
-                throw std::logic_error("Gaussian singleRegression hasn't been implemented yet!");
         }
     }
 };

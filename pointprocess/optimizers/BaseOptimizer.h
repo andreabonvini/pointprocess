@@ -44,8 +44,7 @@ struct TmpVars{
     }
 };
 
-struct OptimizerSetup{
-    double t0;
+struct PipelineSetup{
     double delta;
     std::vector<double> events;
     bool rightCensoring;
@@ -54,10 +53,9 @@ struct OptimizerSetup{
     unsigned long last_event_index;
     unsigned long bins;
     unsigned long bins_in_window;
-    unsigned long maxIter;
+    unsigned int maxIter;
     WeightsProducer weightsProducer;
-    OptimizerSetup(
-            double t0_,
+    PipelineSetup(
             double delta_,
             std::vector<double> e,
             bool rc,
@@ -69,7 +67,6 @@ struct OptimizerSetup{
             unsigned long maxIter_,
             WeightsProducer weightsProducer_
             ){
-        t0 = t0_;
         delta = delta_;
         events = std::move(e);
         rightCensoring = rc;
@@ -94,6 +91,7 @@ struct RegressionResult{
     double meanInterval;
     double time = 0.0;
     unsigned long nIter;
+    double likelihood;
     bool eventHappened = false;
     RegressionResult(
             double theta0_,
@@ -102,7 +100,8 @@ struct RegressionResult{
             double sigma_,
             double lambda_,
             double meanInterval_,
-            long nIter_
+            long nIter_,
+            double likelihood_
             ){
         theta0 = theta0_;
         thetaP = std::move(thetaP_);
@@ -111,6 +110,7 @@ struct RegressionResult{
         lambda = lambda_;
         meanInterval = meanInterval_;
         nIter = nIter_;
+        likelihood = likelihood_;
     }
     virtual ~RegressionResult() = default;
 };
@@ -119,13 +119,35 @@ struct RegressionResult{
 struct PointProcessResult{ // TODO: add Documentation
     std::vector<std::shared_ptr<RegressionResult>> results;
     std::vector<double> taus;
+    PointProcessDistributions distribution;
     double percOut;
     double ksDistance;
     double t0;
     double autoCorr;
-    PointProcessResult(std::vector<std::shared_ptr<RegressionResult>> results_, std::vector<double> taus_, double percOut_, double ksDistance_, double t0_, double autoCorr_){
+    unsigned char AR_ORDER;
+    bool hasTheta0;
+    double windowLength;
+    double delta;
+    PointProcessResult(
+            std::vector<std::shared_ptr<RegressionResult>> results_,
+            std::vector<double> taus_,
+            PointProcessDistributions distribution_,
+            unsigned char AR_ORDER_,
+            bool hasTheta0_,
+            double windowLength_,
+            double delta_,
+            double percOut_,
+            double ksDistance_,
+            double t0_,
+            double autoCorr_
+            ){
         results = std::move(results_);
         taus = std::move(taus_);
+        distribution = distribution_;
+        AR_ORDER = AR_ORDER_;
+        hasTheta0 = hasTheta0_;
+        windowLength = windowLength_;
+        delta = delta_;
         percOut = percOut_;
         ksDistance = ksDistance_;
         t0 = t0_;
@@ -133,45 +155,15 @@ struct PointProcessResult{ // TODO: add Documentation
     }
 };
 
-OptimizerSetup static getOptimizerSetup(double t0, const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
-    /**
-     * This function returns a OptimizerSetup object containing a series of useful parameters, such as:
-     * last_event_index:
-     *     index of the last event within the first time window
-     *     e.g. if events = [0.0, 1.3, 2.1, 3.2, 3.9, 4.5] and window_length = 3.5 then last_event_index = 3
-     *     (since events[3] = 3.2 and events[4] =3.9)
-     * bins:
-     *     total number of bins we can discretize our events in (given our time_resolution)
-     * bins_in_window:
-     *     number of bins in a single time window.
-     **/
-    // Consistency check
-    if (events[ events.size() -1] < windowLength){
-        throw std::invalid_argument("The window length is too wide.");
-    }
-    // Find the index of the last event within window_length
-    unsigned long last_event_index = 0;
-    for(unsigned long index = 0; index < events.size(); index++){
-        if (events[index] > windowLength){
-            last_event_index = index - 1;
-            break;
-        }
-    }
-    // Find total number of time bins
-    auto bins = (unsigned long) std::ceil(events[events.size() -1] / delta);
-    auto bins_in_window = (unsigned long) (windowLength / delta);
-
-    return OptimizerSetup(t0, delta, events, rc, hasTheta0_, AR_ORDER_, last_event_index, bins, bins_in_window, maxIter, weightsProducer);
-}
-
 
 
 class BaseOptimizer{
 public:
-    OptimizerSetup setup;
-    PointProcessDistributions distribution = PointProcessDistributions::Gaussian; // default distribution.
-    explicit BaseOptimizer(OptimizerSetup &setup_) : setup(setup_){
-    };
+    PointProcessDistributions distribution;
+
+    explicit BaseOptimizer(PointProcessDistributions distribution){
+        this->distribution = distribution;
+    }
 
     virtual std::shared_ptr<RegressionResult> optimizeNewton(
             const PointProcessDataset& dataset,
@@ -209,6 +201,7 @@ public:
                 negloglikelRc = computeLikelRc(x, dataset);
                 negloglikel = negloglikel + negloglikelRc;
             }
+
             // ---------- update theta and kappa with Raphson-Newton method or gradient descent ---------------------------
             vars.eigenSolver.compute(vars.hessian);
             NEWTON_WORKED = false;
@@ -269,13 +262,12 @@ public:
             iter++;
             oldNegloglikel = negloglikel;
             maxGrad = vars.gradient.array().abs().maxCoeff();
-            std::cout.precision(30);
         }
 
-        return packResult(x,dataset,iter);
+        return packResult(x,dataset,rightCensoring,iter);
     }
 
-    virtual std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, unsigned long nIter) {
+    virtual std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter) {
 
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -289,6 +281,7 @@ public:
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
         double sigma = x[0];
 
+
         return std::make_shared<RegressionResult>(
                 dataset.hasTheta0 ? x[1] : 0.0,
                 dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1),
@@ -296,7 +289,8 @@ public:
                 sigma,
                 (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
                 meanInterval,
-                nIter);
+                nIter,
+                computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0));
     };
 
     // The following functions are distribution-specific.
@@ -320,10 +314,10 @@ public:
     };
 
     void updateHessianRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessianRc) {
-        auto gradRight = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-        auto gradLeft = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-        auto xRight = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-        auto xLeft = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
+        auto gradRight = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto gradLeft = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto xRight = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto xLeft = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
         double machinePrecision = std::cbrt(1e-15);
         double step;
         xRight = x;
@@ -345,7 +339,34 @@ public:
         }
     };
 
-    std::vector<std::shared_ptr<RegressionResult>> train() {
+    std::shared_ptr<RegressionResult> singleRegression(PointProcessDataset& dataset, bool rightCensoring = false, unsigned int maxIter = 1000){
+
+        auto startingPoint = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        populateStartingPoint(startingPoint);
+        auto x = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        x = startingPoint;
+
+        // Declare some useful variables that will be used in the updateNewton() routine.
+        auto gradient = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto hessian =  Eigen::MatrixXd(dataset.AR_ORDER + dataset.hasTheta0 + 1, dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto rcGradient = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto rcHessian = Eigen::MatrixXd(dataset.AR_ORDER + dataset.hasTheta0 + 1,dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto xold = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto alpha =Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto vars = TmpVars(
+                gradient,
+                hessian,
+                rcGradient,
+                rcHessian,
+                xold,
+                alpha
+        );
+
+        return optimizeNewton(dataset, rightCensoring && dataset.wt > 0.0, maxIter, x, vars);
+
+    }
+
+    std::vector<std::shared_ptr<RegressionResult>> train(PipelineSetup& setup) {
 
         unsigned long last_event_index = setup.last_event_index;
         auto observed_events = std::deque<double>(setup.events.begin(), setup.events.begin() + (long) last_event_index + 1);
@@ -360,7 +381,7 @@ public:
         double windowLength = setup.delta * (double) (setup.bins_in_window);
         bool resetParameters = true;
         bool eventHappened;
-        unsigned long tmpIter;
+        unsigned int tmpIter;
         assert (fabs(std::remainder(windowLength,setup.delta)) < 1e-10); // no better way to check if windowLength is a multiple of delta...
 
         auto startingPoint = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);

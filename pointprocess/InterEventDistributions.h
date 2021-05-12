@@ -5,7 +5,6 @@
 #ifndef POINTPROCESS_INTEREVENTDISTRIBUTIONS_H
 #define POINTPROCESS_INTEREVENTDISTRIBUTIONS_H
 
-//#include "inverse_gaussian/InverseGaussian.h"
 
 enum PointProcessDistributions : unsigned  char
 {

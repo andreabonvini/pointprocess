@@ -13,14 +13,12 @@
 
 class GaussianOptimizer : public BaseOptimizer{
 public:
-    explicit GaussianOptimizer(OptimizerSetup setup): BaseOptimizer(setup){
-        distribution = PointProcessDistributions::Gaussian;
-    };
+    explicit GaussianOptimizer(): BaseOptimizer(PointProcessDistributions::Gaussian){};
 
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
-        startingPoint[0] = 0.0003; // sigma0
+        startingPoint[0] = 0.03; // sigma0
         startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
     };
 
@@ -109,7 +107,7 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // Mus = dataset.xn * x.segment(1,x.size() - 1)
-        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).minCoeff() < 0.0 ) return INFINITY; // Check constraints.
+        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0.0 ) return INFINITY; // Check constraints.
         return - dataset.eta.dot(((
                 log(1.0 / (x[0]*sqrt(2.0 * M_PI)))
                 -

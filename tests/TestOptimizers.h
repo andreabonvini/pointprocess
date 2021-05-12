@@ -11,7 +11,6 @@
 
 bool gradientRcIsRight(const PointProcessDataset& dataset, PointProcessDistributions dist){
 
-    //
     // FIXME: Change precision in .isApprox() for the first parameter (Kappa or Sigma), the gradients for this values
     //  are in the order of 1e-6. (Maybe only for the Inverse Gaussian, it is enough to change x[0] in the test.)
 
@@ -69,11 +68,6 @@ bool gradientRcIsRight(const PointProcessDataset& dataset, PointProcessDistribut
         xRight[i] = xStart[i];
         xLeft[i] = xStart[i];
     }
-
-    std::cout << "Gradient RC" << std::endl;
-    std::cout << gradientRc << std::endl;
-    std::cout << "Gradient RC APPROXIMATED:" << std::endl;
-    std::cout << approxGradientRc << std::endl;
     // Compare
     return approxGradientRc.isApprox(gradientRc,1e-5);
 }

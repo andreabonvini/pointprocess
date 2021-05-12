@@ -13,14 +13,12 @@
 
 class LogNormalOptimizer : public BaseOptimizer{
 public:
-    explicit LogNormalOptimizer(OptimizerSetup setup): BaseOptimizer(setup){
-        distribution = PointProcessDistributions::LogNormal;
-    };
+    explicit LogNormalOptimizer(): BaseOptimizer(PointProcessDistributions::LogNormal){};
 
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
-         startingPoint[0] = 0.0003; // sigma0
+         startingPoint[0] = 0.03; // sigma0
          startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
     };
 
@@ -83,12 +81,6 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-        std::cout << "PDF: " << exp(
-                log(1.0 / (dataset.wt * x[0] * sqrt(2.0 * M_PI)))
-                -
-                pow((log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))), 2.0) / (2.0 * pow(x[0],2.0))
-        ) << std::endl;
-
         return exp(
                 log(1.0 / (dataset.wt * x[0] * sqrt(2.0 * M_PI)))
                 -
@@ -100,18 +92,7 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-
-        std::cout << "sigma: " << x[0] << std::endl;
-        std::cout << "wt: " << dataset.wt << std::endl;
-        std::cout << "log(wt): " << log(dataset.wt) << std::endl;
-
-        std::cout << "rcMu: " << x.segment(1,x.size() - 1).dot(dataset.xt) << std::endl;
-        std::cout << "log(rcMu): " << log(x.segment(1,x.size() - 1).dot(dataset.xt)) << std::endl;
-
         boost::math::normal norm;
-
-        std::cout << "CDF: " << cdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) /  x[0] ) << std::endl;
-
         return cdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) /  x[0] );
     };
 
@@ -119,6 +100,7 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // Mus = (dataset.xn * x.segment(1,x.size() - 1))
+        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0.0 ) return INFINITY; // Check constraints.
         return - dataset.eta.dot( ((1.0 / (dataset.wn.array() * x[0] * sqrt(2.0 * M_PI))).log() - 0.5 * (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()).pow(2.0) / pow(x[0],2.0)).matrix() );
     };
 
