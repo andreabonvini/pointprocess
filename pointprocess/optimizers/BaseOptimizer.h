@@ -93,6 +93,7 @@ struct RegressionResult{
     unsigned long nIter;
     double likelihood;
     bool eventHappened = false;
+    double maxGrad;
     RegressionResult(
             double theta0_,
             Eigen::VectorXd thetaP_,
@@ -101,7 +102,8 @@ struct RegressionResult{
             double lambda_,
             double meanInterval_,
             long nIter_,
-            double likelihood_
+            double likelihood_,
+            double maxGrad_
             ){
         theta0 = theta0_;
         thetaP = std::move(thetaP_);
@@ -111,50 +113,10 @@ struct RegressionResult{
         meanInterval = meanInterval_;
         nIter = nIter_;
         likelihood = likelihood_;
+        maxGrad = maxGrad_;
     }
     virtual ~RegressionResult() = default;
 };
-
-
-struct PointProcessResult{ // TODO: add Documentation
-    std::vector<std::shared_ptr<RegressionResult>> results;
-    std::vector<double> taus;
-    PointProcessDistributions distribution;
-    double percOut;
-    double ksDistance;
-    double t0;
-    double autoCorr;
-    unsigned char AR_ORDER;
-    bool hasTheta0;
-    double windowLength;
-    double delta;
-    PointProcessResult(
-            std::vector<std::shared_ptr<RegressionResult>> results_,
-            std::vector<double> taus_,
-            PointProcessDistributions distribution_,
-            unsigned char AR_ORDER_,
-            bool hasTheta0_,
-            double windowLength_,
-            double delta_,
-            double percOut_,
-            double ksDistance_,
-            double t0_,
-            double autoCorr_
-            ){
-        results = std::move(results_);
-        taus = std::move(taus_);
-        distribution = distribution_;
-        AR_ORDER = AR_ORDER_;
-        hasTheta0 = hasTheta0_;
-        windowLength = windowLength_;
-        delta = delta_;
-        percOut = percOut_;
-        ksDistance = ksDistance_;
-        t0 = t0_;
-        autoCorr = autoCorr_;
-    }
-};
-
 
 
 class BaseOptimizer{
@@ -178,14 +140,14 @@ public:
         double tmpNegloglikel;
         double tmpNegloglikelRc;
 
-        double gradTol = 1e-8;
+        double gradTol = 1e-4;
         double maxGrad = INFINITY;
         unsigned long iter = 0;
         unsigned long newtonIter = 0;
         unsigned long gradientDescentIter = 0;
         bool NEWTON_WORKED;
         bool GRADIENT_DESCENT_WORKED;
-
+        bool cdfIsOne = false;
 
         while (maxGrad > gradTol && iter < maxIter){
             vars.xold = x;
@@ -193,6 +155,7 @@ public:
             updateGradient(x, dataset, vars.gradient);
             updateHessian(x, dataset, vars.hessian);
             negloglikel = computeLikel(x,dataset);
+
             if (rightCensoring && dataset.wt > 0.0){
                 updateGradientRc(x, dataset, vars.rcGradient);
                 updateHessianRc(x, dataset, vars.rcHessian);
@@ -202,12 +165,23 @@ public:
                 negloglikel = negloglikel + negloglikelRc;
             }
 
+            if (isinf(negloglikelRc)){
+//                if (!cdfIsOne){ TODO: UNCOMMENT. // put a break?
+//                    std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
+//                }
+                cdfIsOne = true;
+            }
+            else{
+                cdfIsOne = false;
+            }
+
             // ---------- update theta and kappa with Raphson-Newton method or gradient descent ---------------------------
             vars.eigenSolver.compute(vars.hessian);
             NEWTON_WORKED = false;
-            if (vars.eigenSolver.eigenvalues().real().minCoeff() > 0.0){
+            GRADIENT_DESCENT_WORKED = false;
+            if (vars.eigenSolver.eigenvalues().real().minCoeff() > 0.0 && !cdfIsOne ){
                 // Newton-Raphson with line-search
-                for (char i = 0; i < 30; i++){
+                for (char i = 0; i < 10; i++){
                     vars.alpha.setConstant(1.0 / pow(2.0, (double) i));
                     x = vars.xold - (vars.alpha.array() * (vars.hessian.inverse() * vars.gradient).array()).matrix();
                     // Compute new likelihood
@@ -216,20 +190,25 @@ public:
                         tmpNegloglikelRc = computeLikelRc(x, dataset);
                         tmpNegloglikel += tmpNegloglikelRc;
                     }
+                    else if (!rightCensoring){
+                        // Even if we don't apply rightCensoring we want to assure that the estimate for the current
+                        // time bin is greater than 0.0
+                        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) tmpNegloglikel = INFINITY;
+                    }
                     // If the new point is better than the old one we go on, otherwise we decrease the learning rate.
                     if (tmpNegloglikel != INFINITY && tmpNegloglikel < negloglikel){
                         negloglikel = tmpNegloglikel;
                         NEWTON_WORKED = true;
                         break;
                     }
-                    else {
+                    else{
                         continue;
                     }
                 }
             }
-            if (!NEWTON_WORKED){
-                GRADIENT_DESCENT_WORKED = false;
-                for (char i = 0; i < 25; i++) {
+            if (!NEWTON_WORKED && !cdfIsOne){
+                for (char i = 0; i < 10; i++) {
+                    // std::cout << "grad:\n" << vars.gradient << std::endl;
                     vars.alpha.setConstant(0.0005 / pow(2.0, (double) i));
                     x = vars.xold - (vars.alpha.array() * vars.gradient.array()).matrix();
                     // Compute new likelihood
@@ -238,8 +217,13 @@ public:
                         tmpNegloglikelRc = computeLikelRc(x, dataset);
                         tmpNegloglikel = tmpNegloglikel + tmpNegloglikelRc;
                     }
+                    else if (!rightCensoring){
+                        // Even if we don't apply rightCensoring we want to assure that the estimate for the current
+                        // time bin is greater than 0.0
+                        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) tmpNegloglikel = INFINITY;
+                    }
                     // If the new point is better than the old one we go on.
-                    if (tmpNegloglikel != INFINITY && tmpNegloglikel <= negloglikel + 1e-1 ) { // TODO Why this + 1e-1 helps?
+                    if (tmpNegloglikel != INFINITY && tmpNegloglikel < negloglikel) { // TODO Why this + 1e-1 helps?
                         negloglikel = tmpNegloglikel;
                         GRADIENT_DESCENT_WORKED = true;
                         break;
@@ -253,21 +237,24 @@ public:
             if (NEWTON_WORKED){
                 newtonIter++;
             }
+
             else if (GRADIENT_DESCENT_WORKED){
                 gradientDescentIter++;
             }
             else{
                 x = vars.xold;
+                break;
             }
             iter++;
             oldNegloglikel = negloglikel;
             maxGrad = vars.gradient.array().abs().maxCoeff();
         }
 
-        return packResult(x,dataset,rightCensoring,iter);
+
+        return packResult(x,dataset,rightCensoring, iter, maxGrad);
     }
 
-    virtual std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter) {
+    virtual std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) {
 
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -290,7 +277,8 @@ public:
                 (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
                 meanInterval,
                 nIter,
-                computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0));
+                computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0),
+                maxGrad);
     };
 
     // The following functions are distribution-specific.
@@ -313,7 +301,7 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-        assert( x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
+        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) return INFINITY;
         return - dataset.eta[dataset.eta.size() - 1] * log(1.0 - computeCDF(x,dataset));
     };
 
@@ -357,7 +345,7 @@ public:
         auto rcHessian = Eigen::MatrixXd(dataset.AR_ORDER + dataset.hasTheta0 + 1,dataset.AR_ORDER + dataset.hasTheta0 + 1);
         auto xold = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
         auto alpha =Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
-        auto vars = TmpVars(
+        auto vars =  TmpVars(
                 gradient,
                 hessian,
                 rcGradient,
@@ -365,6 +353,7 @@ public:
                 xold,
                 alpha
         );
+
 
         return optimizeNewton(dataset, rightCensoring && dataset.wt > 0.0, maxIter, x, vars);
 
@@ -381,6 +370,7 @@ public:
 
         // Initialize results vector and some useful variables
         std::vector<std::shared_ptr<RegressionResult>> results;
+        results.reserve(setup.bins - setup.bins_in_window);
         double currentTime;
         double windowLength = setup.delta * (double) (setup.bins_in_window);
         bool resetParameters = true;
@@ -401,24 +391,23 @@ public:
         auto rcGradient = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
         auto rcHessian = Eigen::MatrixXd(setup.AR_ORDER + setup.hasTheta0 + 1,setup.AR_ORDER + setup.hasTheta0 + 1);
         auto xold = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-        auto alpha =Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-        auto vars = TmpVars(
+        auto alpha = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
+        TmpVars vars = TmpVars(
                 gradient,
                 hessian,
                 rcGradient,
                 rcHessian,
                 xold,
                 alpha
-        );
-
+                );
 
         // Main loop
         for (unsigned long bin_index = setup.bins_in_window; bin_index <= setup.bins; bin_index ++){
 
             // TODO: Add some kind of progress bar.
-            // TODO: Parallelize.
-            if (bin_index % 1000 == 0){ // TODO: Remove.
-                std::cout << bin_index << " / " << setup.bins << std::endl;
+            // TODO: Parallelize?.
+            if (bin_index % 10000 == 0){ // TODO: Remove.
+                std::cout << bin_index << " / " << setup.bins << "\n";
             }
 
             currentTime = (double) (bin_index - 1) * setup.delta;
@@ -438,20 +427,20 @@ public:
                 observed_events.push_back(setup.events[last_event_index]);
                 resetParameters = true;
             }
-
             // We create a PointProcessDataset for the current time bin
             auto dataset = PointProcessDataset::load(observed_events,setup.AR_ORDER,setup.hasTheta0,setup.weightsProducer, currentTime);
             if (resetParameters){
                 // The uncensored solution is a good starting point.
-                std::shared_ptr<RegressionResult> tmpRes = optimizeNewton(dataset, false, setup.maxIter, x, vars);
-                tmpIter = tmpRes->nIter;
+                std::shared_ptr<RegressionResult> tmpRes = optimizeNewton(dataset, false,( (bin_index == setup.bins_in_window) ? 50000 : setup.maxIter), x, vars);
+                tmpIter = tmpRes -> nIter;
                 resetParameters = false;
             }
 
             // Compute the actual parameters by applying right-censoring (if specified)
             std::shared_ptr<RegressionResult> result = optimizeNewton(dataset, setup.rightCensoring && dataset.wt > 0.0, setup.maxIter, x, vars);
 
-            // Add metadata to result
+
+            // Append metadata to result
             result->time = currentTime;
             result->eventHappened = eventHappened;
             if(eventHappened){

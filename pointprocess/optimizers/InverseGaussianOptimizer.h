@@ -17,7 +17,6 @@
 #include <boost/math/distributions/normal.hpp>
 
 struct IGRegressionResult : RegressionResult {
-
     double kappa;
     IGRegressionResult(double theta0_,
                        const Eigen::VectorXd& thetaP_,
@@ -27,11 +26,11 @@ struct IGRegressionResult : RegressionResult {
                        double meanInterval,
                        long nIter,
                        double likelihood,
+                       double maxGrad,
                        double kappa)
-                       : RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood) {
+                       : RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad) {
         this->kappa = kappa;
     }
-
 };
 
 
@@ -43,7 +42,7 @@ public:
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
-        startingPoint[0] = 1500.0; // k0
+        startingPoint[0] = 1000.0; // k0
         startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
     };
 
@@ -138,7 +137,7 @@ public:
                 (((x[0] / (2.0 * M_PI * dataset.wn.array().pow(3.0))).sqrt().log() - (( x[0] * (dataset.wn - (dataset.xn * x.segment(1,x.size() - 1))).array().pow(2.0))/(2.0 * (dataset.xn * x.segment(1,x.size() - 1)).array().pow(2.0) * dataset.wn.array()))).matrix()));
     };
 
-    std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter) override{
+    std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) override{
 
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -147,6 +146,7 @@ public:
         // Check constraints
         assert (x[0] > 0.0);
         assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
+        assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
 
         double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
@@ -161,6 +161,7 @@ public:
                 meanInterval,
                 nIter,
                 computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0),
+                maxGrad,
                 x[0]);
     };
 

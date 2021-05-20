@@ -6,6 +6,7 @@
 #define POINTPROCESS_REGRESSIONPIPELINE_H
 
 #include "InterEventDistributions.h"
+#include "Eigen/Core"
 #include "optimizers/BaseOptimizer.h"
 #include "optimizers/InverseGaussianOptimizer.h"
 #include "optimizers/GaussianOptimizer.h"
@@ -17,6 +18,75 @@
 #include <stdexcept>
 #include <cmath>
 #include <iostream>
+
+struct Stats{
+    double ksDistance = 0.0;
+    double percOut = 0.0;
+    double autoCorr = 0.0;
+    Stats() = default;
+    Stats(double ksDistance, double percOut, double autoCorr){
+        this->ksDistance = ksDistance;
+        this->percOut = percOut;
+        this->autoCorr = autoCorr;
+    }
+};
+
+struct PointProcessResult{ // TODO: add Documentation
+    std::vector<std::shared_ptr<RegressionResult>> results;
+    std::vector<double> taus;
+    PointProcessDistributions distribution;
+    unsigned char AR_ORDER;
+    bool hasTheta0;
+    double windowLength;
+    double delta;
+    double t0;
+    Stats stats;
+    PointProcessResult(
+            std::vector<std::shared_ptr<RegressionResult>> results,
+            std::vector<double> taus,
+            PointProcessDistributions distribution,
+            unsigned char AR_ORDER,
+            bool hasTheta0,
+            double windowLength,
+            double delta,
+            double t0,
+            Stats stats
+    ){
+        this->results = std::move(results);
+        this->taus = std::move(taus);
+        this->distribution = distribution;
+        this->AR_ORDER = AR_ORDER;
+        this->hasTheta0 = hasTheta0;
+        this->windowLength = windowLength;
+        this->delta = delta;
+        this->t0 = t0;
+        this->stats = stats;
+    }
+};
+
+
+static Stats computeStats(std::vector<double>& taus){
+    std::vector<double> rescaledTimes;
+    Eigen::VectorXd z(taus.size());
+    for (long i = 0 ; i < taus.size(); i++){
+        z[i] = taus[i];
+    }
+    z = - z;
+    z = 1.0 - z.array().exp();
+    std::sort(z.data(), z.data() + z.size());
+    auto lin = Eigen::VectorXd::LinSpaced(z.size(),0.0,1.0);
+    auto lu = Eigen::VectorXd::LinSpaced(z.size(),1.36 / sqrt(z.size()), 1.0 + 1.36 / sqrt(z.size()));
+    auto ll = Eigen::VectorXd::LinSpaced(z.size(),-1.36 / sqrt(z.size()), 1.0 - 1.36 / sqrt(z.size()));
+    double ksDistance = (z.array() - lin.array()).abs().maxCoeff() / sqrt(2.0);
+    double percOut = 0.0;
+    double autoCorr = 0.0;
+    for (long i = 0; i < z.size(); i++){
+        percOut += (double) z[i] < ll[i] || z[i] > lu[i];
+    }
+    percOut = percOut / ((double) z.size());
+    return Stats(ksDistance, percOut, autoCorr);
+
+}
 
 
 PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
@@ -97,19 +167,21 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared
 
 
 
+
+
 class RegressionPipeline{
 public:
-    PointProcessDistributions interEventDistribution;
+    PointProcessDistributions distribution;
     unsigned char AR_ORDER;
     bool hasTheta0;
     RegressionPipeline(
-            PointProcessDistributions interEventDistribution,
+            PointProcessDistributions distribution,
             unsigned char AR_ORDER,
             bool hasTheta0
             ){
         /******************************************************************
          * Parameters:
-         *     interEventDistribution_: One of the enumeration values of PointProcessDistributions, either
+         *     distribution: One of the enumeration values of PointProcessDistributions, either
          *         1) InverseGaussian
          *         2) LogNormal
          *         3) Gaussian
@@ -117,7 +189,7 @@ public:
          *     hasTheta0_: if the AR model takes account for a mean/theta0 parameter.
          *
          *****************************************************************/
-        this->interEventDistribution = interEventDistribution;
+        this->distribution = distribution;
         this->AR_ORDER = AR_ORDER;
         this->hasTheta0 = hasTheta0;
     }
@@ -160,39 +232,30 @@ public:
                                               maxIter, weightsProducer);
 
         // TODO: remove switch statement and factorize...
-        switch (this->interEventDistribution) {
+        switch (this->distribution) {
             case PointProcessDistributions::InverseGaussian: {
                 auto optimizer = InverseGaussianOptimizer();
                 auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
-                // TODO: compute ksDistance & Co.
-                double percOut = 0.0;
-                double ksDistance = 0.0;
-                double autoCorr = 0.0;
-                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
+                auto stats = computeStats(taus);
+                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
             }
             case PointProcessDistributions::LogNormal: {
                 auto optimizer = LogNormalOptimizer();
                 auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
-                // TODO: compute ksDistance & Co.
-                double percOut = 0.0;
-                double ksDistance = 0.0;
-                double autoCorr = 0.0;
-                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
+                auto stats = computeStats(taus);
+                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
             }
             case PointProcessDistributions::Gaussian: {
                 auto optimizer = GaussianOptimizer();
                 auto results = optimizer.train(pipelineSetup);
                 std::vector<double> taus;
                 computeTaus(taus, results, pipelineSetup);
-                // TODO: compute ksDistance & Co.
-                double percOut = 0.0;
-                double ksDistance = 0.0;
-                double autoCorr = 0.0;
-                return PointProcessResult(results,taus,this->interEventDistribution,this->AR_ORDER,this-> hasTheta0, windowLength, delta, percOut, ksDistance, t0, autoCorr);
+                auto stats = computeStats(taus);
+                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
             }
             default:
                 throw std::logic_error("Please, insert a valid InterEvent distribution.");

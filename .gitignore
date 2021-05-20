@@ -1,5 +1,5 @@
 # Project exclude paths
-cmake-build-debug/
+build/
 ext/Google_tests/lib/*
 DATA/*
 .DS_Store

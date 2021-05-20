@@ -9,7 +9,7 @@ Based on the specific distribution you want to use to fit your data you can inst
 - :code:`auto opt = GaussianOptimizer()`
 - :code:`auto opt = LogNormalOptimizer()`
 
-Once you have instatiated your optimizer, you have to build a :code:`WeightsProducer` instance, a :ref:`PointProcessDataset` and call the :code:`.singleRegression()` method as you
+Once you have instantiated your optimizer, you have to build a :code:`WeightsProducer` instance, a :ref:`PointProcessDataset` and call the :code:`.singleRegression()` method as you
 can see in the example below:
 
 .. code-block:: cpp
