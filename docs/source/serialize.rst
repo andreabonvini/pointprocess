@@ -2,7 +2,7 @@ Serialization
 ==============
 
 Once you have a :code:`PointProcessResult` (output of :code:`RegressionPipeline::fullRegression()` you can use the following functions to serialize
-both the :code:`regression parameters` at each time step (**ALERT**: The :code:`.csv` file generated tends to be quite large, e.g. :code:`1 GB` for :code:`3` hours of data)
+both the :code:`regression parameters` at each time step (**ALERT**: The :code:`.csv` file generated tends to be quite large, e.g. :code:`1 GB` for :code:`3` hours of data processed with a :code:`delta = 0.002`)
 and the :code:`Taus` (integral of hazard-rate for each observed event) in order to assess goodness of fit.
 
 .. code-block:: cpp
@@ -11,7 +11,7 @@ and the :code:`Taus` (integral of hazard-rate for each observed event) in order 
     ppResData2csv(ppRes, std::string("myData.csv"));
     ppResTaus2csv(ppRes, std::string("myTaus.csv"));
 
-The header of these files will be:
+The header of these files (supposing we processed the data with an :code:`AR_ORDER = 2`) will be:
 
 .. csv-table:: myData.csv
    :file: _static/myDataExample.csv

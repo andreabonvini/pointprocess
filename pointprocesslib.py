@@ -24,7 +24,6 @@ def regrlikel(
         outputDataName: str = "Data.csv",
         outputTausName: str = "Taus.csv"
 ) -> None:
-    # TODO assicurati che ci sia coerenza tra le due Enum.
     assert len(events.shape) == 1
     n_events = len(events)
     c_events_pointer = events.astype(np.double).ctypes.data_as(c_double_p)
