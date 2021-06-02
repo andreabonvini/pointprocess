@@ -30,7 +30,7 @@ struct testData {
 };
 
 
-PointProcessDataset getTestDataset() {
+static PointProcessDataset getTestDataset() {
     std::deque<double> events = {
             700.1410, 701.0780, 702.0310, 702.9770, 703.8670, 704.8050, 705.7580, 706.7110, 707.6800,
             708.6480, 709.6170, 710.5550, 711.4920, 712.4140, 713.2580, 714.1090, 714.9530, 715.7190,

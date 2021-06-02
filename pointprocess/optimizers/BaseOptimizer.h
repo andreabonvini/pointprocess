@@ -149,6 +149,8 @@ public:
         bool GRADIENT_DESCENT_WORKED;
         bool cdfIsOne = false;
 
+        auto oldold = vars.xold;
+
         while (maxGrad > gradTol && iter < maxIter){
             vars.xold = x;
             // -------- compute gradient, hessian and negloglikelihood with the current parameters theta and kappa ---------
@@ -208,7 +210,6 @@ public:
             }
             if (!NEWTON_WORKED && !cdfIsOne){
                 for (char i = 0; i < 10; i++) {
-                    // std::cout << "grad:\n" << vars.gradient << std::endl;
                     vars.alpha.setConstant(0.0005 / pow(2.0, (double) i));
                     x = vars.xold - (vars.alpha.array() * vars.gradient.array()).matrix();
                     // Compute new likelihood
@@ -223,7 +224,7 @@ public:
                         if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) tmpNegloglikel = INFINITY;
                     }
                     // If the new point is better than the old one we go on.
-                    if (tmpNegloglikel != INFINITY && tmpNegloglikel < negloglikel) { // TODO Why this + 1e-1 helps?
+                    if (tmpNegloglikel != INFINITY && tmpNegloglikel < negloglikel) {
                         negloglikel = tmpNegloglikel;
                         GRADIENT_DESCENT_WORKED = true;
                         break;
@@ -250,6 +251,21 @@ public:
             maxGrad = vars.gradient.array().abs().maxCoeff();
         }
 
+        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0){
+            std::cout << "dataset.wt: " << dataset.wt << std::endl;
+            std::cout << "rcMu: " << x.segment(1,x.size() - 1).dot(dataset.xt) << std::endl;
+            std::cout << "oldold x: \n" << oldold << std::endl;
+            std::cout << "current x: \n" << x << std::endl;
+            std::cout << "maxGrad: " << maxGrad << std::endl;
+            std::cout << "gradient: \n" << vars.gradient << std::endl;
+            std::cout << "rcGradient: \n" << vars.rcGradient << std::endl;
+            std::cout << "NEWTON WORKED: " << NEWTON_WORKED << std::endl;
+            std::cout << "GRADIENT DESCENT WORKED: " << GRADIENT_DESCENT_WORKED << std::endl;
+            std::cout << "cdfIsOne: " << cdfIsOne << std::endl;
+            std::cout << "iter: " << iter << std::endl;
+            std::cout << "negloglikel: " << negloglikel << std::endl;
+        }
+
 
         return packResult(x,dataset,rightCensoring, iter, maxGrad);
     }
@@ -263,6 +279,7 @@ public:
         // Check constraints
         assert (x[0] > 0.0);
         assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
+        assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
 
         double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
@@ -363,6 +380,7 @@ public:
 
         unsigned long last_event_index = setup.last_event_index;
         auto observed_events = std::deque<double>(setup.events.begin(), setup.events.begin() + (long) last_event_index + 1);
+
         /* observed_events here is the subset of events observed during the first window, this std::deque will keep track
          * of the events used for local regression at each time bin, discarding old events and adding new ones.
          * It works as a buffer for our regression pipeline.
@@ -403,14 +421,12 @@ public:
 
         // Main loop
         for (unsigned long bin_index = setup.bins_in_window; bin_index <= setup.bins; bin_index ++){
-
             // TODO: Add some kind of progress bar.
             // TODO: Parallelize?.
             if (bin_index % 10000 == 0){ // TODO: Remove.
                 std::cout << bin_index << " / " << setup.bins << "\n";
             }
-
-            currentTime = (double) (bin_index - 1) * setup.delta;
+            currentTime = (double) bin_index * setup.delta;
             /* If the first element of observed_events happened before the
              * time window between (current_time - window_length) and (current_time)
              * we can discard it since it will not be part of the current optimization process.
@@ -438,7 +454,6 @@ public:
 
             // Compute the actual parameters by applying right-censoring (if specified)
             std::shared_ptr<RegressionResult> result = optimizeNewton(dataset, setup.rightCensoring && dataset.wt > 0.0, setup.maxIter, x, vars);
-
 
             // Append metadata to result
             result->time = currentTime;

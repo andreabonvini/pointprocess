@@ -24,24 +24,22 @@ bool gradientRcIsRight(const PointProcessDataset& dataset, PointProcessDistribut
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
     auto wp = WeightsProducer(1.0);
-    auto set = OptimizerSetup(0.0,0.005,events,true,true,8,10,100,10,10000,wp);
+    auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
+
     if (dist == PointProcessDistributions::Gaussian){
-        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer(set));
+        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::InverseGaussian){
-        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer(set));
+        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::LogNormal){
-        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer(set));
+        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer());
     }
 
     dummyOpt->populateStartingPoint(xStart);
 
     if(dist == PointProcessDistributions::Gaussian){
         xStart[0] = 0.1;
-    }
-    if(dist == PointProcessDistributions::LogNormal){
-        xStart[0] = 0.01;
     }
 
     // Compute exact gradient
@@ -84,15 +82,15 @@ bool gradientIsRight(const PointProcessDataset& dataset, PointProcessDistributio
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
     auto wp = WeightsProducer(1.0);
-    auto set = OptimizerSetup(0.0,0.005,events,true,true,8,10,100,10,10000,wp);
+    auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
     if (dist == PointProcessDistributions::Gaussian){
-        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer(set));
+        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::InverseGaussian){
-        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer(set));
+        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::LogNormal){
-        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer(set));
+        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer());
     }
 
     dummyOpt->populateStartingPoint(xStart);
@@ -139,15 +137,15 @@ bool hessianIsRight(const PointProcessDataset& dataset, PointProcessDistribution
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
     auto wp = WeightsProducer(1.0);
-    auto set = OptimizerSetup(0.0,0.005,events,true,true,8,10,100,10,10000,wp);
+    auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
     if (dist == PointProcessDistributions::Gaussian){
-        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer(set));
+        dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::InverseGaussian){
-        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer(set));
+        dummyOpt = std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer());
     }
     else if(dist == PointProcessDistributions::LogNormal){
-        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer(set));
+        dummyOpt = std::make_shared<LogNormalOptimizer>(LogNormalOptimizer());
     }
 
     dummyOpt->populateStartingPoint(xStart);

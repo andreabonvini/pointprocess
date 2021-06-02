@@ -91,7 +91,8 @@ static Stats computeStats(std::vector<double>& taus){
 
 PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
     /**
-     * This function returns a OptimizerSetup object containing a series of useful parameters, such as:
+     * This function returns a PipelineSetup object containing a series of useful parameters for a fullRegression(),
+     * such as:
      * last_event_index:
      *     index of the last event within the first time window
      *     e.g. if events = [0.0, 1.3, 2.1, 3.2, 3.9, 4.5] and window_length = 3.5 then last_event_index = 3
@@ -132,8 +133,8 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared
     bool wait = true;
 
     unsigned long offset = setup.bins_in_window;
-    for (unsigned long bin_index = offset; bin_index <= setup.bins + 1; bin_index++) {
-        currentTime = (double) (bin_index - 1) * setup.delta;
+    for (unsigned long bin_index = offset; bin_index <= setup.bins; bin_index++) {
+        currentTime = (double) bin_index * setup.delta;
         eventHappened = setup.events[last_event_index + 1] <= currentTime;
         if (eventHappened){
             last_event_index++;
@@ -149,7 +150,7 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared
              * events:    --|--|----|---|----|----|--|
              *   bins:    ----------------------------
              * timeWindow:  \_____________/XX       <- WRONG
-             *                  \_____________/     <- RIGHT
+             *                 \_____________/      <- RIGHT
              *  We have to wait the first observable event (5) in order to compute a reliable estimate
              *  of the first tau (integral of lambda)
              */
@@ -164,9 +165,6 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared
         }
     }
 }
-
-
-
 
 
 class RegressionPipeline{

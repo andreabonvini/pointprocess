@@ -3,7 +3,6 @@ project(pointprocess)
 
 set(CMAKE_CXX_STANDARD 20)
 
-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEIGEN_NO_DEBUG")
@@ -71,4 +70,4 @@ target_link_libraries (pointprocess Eigen3::Eigen)
 # I followed the instructions at:
 # https://www.jetbrains.com/help/clion/creating-google-test-run-debug-configuration-for-test.html#add-google-tests
 
-# add_subdirectory(ext/Google_tests)
+add_subdirectory(ext/Google_tests)

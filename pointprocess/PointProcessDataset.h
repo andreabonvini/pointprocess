@@ -110,7 +110,14 @@ public:
         if (current_time == 0.0)
             current_time = events_times[events_times.size() - 1];
 
-        assert (current_time >= events_times[events_times.size() - 1]);
+        if (current_time < events_times[events_times.size() - 1]){
+            std::cout << "Current Time: " << current_time << std::endl;
+            std::cout << "Events Times:" << std::endl;
+            for (auto& el : events_times){
+                std::cout << el << std::endl;
+            }
+        }
+        assert(current_time >= events_times[events_times.size() - 1]);
         double wt_ = current_time - events_times[events_times.size() - 1];
         // target_distances = current_time - event_times[p + 1 :]
         std::vector<double> target_distances;
