@@ -84,7 +84,7 @@ bool testPointProcessDataset(){
                    0.953, 0.945, 0.946,
                    0.953, 0.953, 0.945;
 
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     double current_time = 736.0;
     double expected_wt = current_time - events[events.size() - 1];
 
@@ -130,12 +130,11 @@ bool testPointProcessDataset_hasTheta0(){
                    1.000, 0.953, 0.945, 0.946,
                    1.000, 0.953, 0.953, 0.945;
 
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     double current_time = 736.0;
     double expected_wt = current_time - events[events.size() - 1];
 
     auto dataset = PointProcessDataset::load(events,ar_order,hasTheta0,wp,current_time);
-
 
     return dataset.wn.isApprox(expected_wn) && dataset.xn.isApprox(expected_xn) && dataset.xt.isApprox(expected_xt) && dataset.eta.isApprox(expected_eta) && dataset.wt == expected_wt;
 }

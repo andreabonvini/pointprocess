@@ -19,6 +19,7 @@
 #include <deque>
 #include <utility>
 
+#define DEBUG 0
 
 struct TmpVars{
     Eigen::VectorXd gradient;
@@ -140,7 +141,7 @@ public:
         double tmpNegloglikel;
         double tmpNegloglikelRc;
 
-        double gradTol = 1e-4;
+        double gradTol = 1e-5;
         double maxGrad = INFINITY;
         unsigned long iter = 0;
         unsigned long newtonIter = 0;
@@ -168,9 +169,9 @@ public:
             }
 
             if (isinf(negloglikelRc)){
-//                if (!cdfIsOne){ TODO: UNCOMMENT. // put a break?
-//                    std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
-//                }
+                if (!cdfIsOne){ // TODO: put a break?
+                    std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
+                }
                 cdfIsOne = true;
             }
             else{
@@ -251,22 +252,6 @@ public:
             maxGrad = vars.gradient.array().abs().maxCoeff();
         }
 
-        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0){
-            std::cout << "dataset.wt: " << dataset.wt << std::endl;
-            std::cout << "rcMu: " << x.segment(1,x.size() - 1).dot(dataset.xt) << std::endl;
-            std::cout << "oldold x: \n" << oldold << std::endl;
-            std::cout << "current x: \n" << x << std::endl;
-            std::cout << "maxGrad: " << maxGrad << std::endl;
-            std::cout << "gradient: \n" << vars.gradient << std::endl;
-            std::cout << "rcGradient: \n" << vars.rcGradient << std::endl;
-            std::cout << "NEWTON WORKED: " << NEWTON_WORKED << std::endl;
-            std::cout << "GRADIENT DESCENT WORKED: " << GRADIENT_DESCENT_WORKED << std::endl;
-            std::cout << "cdfIsOne: " << cdfIsOne << std::endl;
-            std::cout << "iter: " << iter << std::endl;
-            std::cout << "negloglikel: " << negloglikel << std::endl;
-        }
-
-
         return packResult(x,dataset,rightCensoring, iter, maxGrad);
     }
 
@@ -284,7 +269,6 @@ public:
         double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
         double sigma = x[0];
-
 
         return std::make_shared<RegressionResult>(
                 dataset.hasTheta0 ? x[1] : 0.0,
@@ -319,7 +303,8 @@ public:
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
         if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) return INFINITY;
-        return - dataset.eta[dataset.eta.size() - 1] * log(1.0 - computeCDF(x,dataset));
+        double rcEta = 1.0; // dataset.eta[dataset.eta.size() - 1];
+        return - rcEta * log(1.0 - computeCDF(x,dataset));
     };
 
     void updateHessianRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessianRc) {
@@ -361,7 +346,7 @@ public:
         auto rcGradient = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
         auto rcHessian = Eigen::MatrixXd(dataset.AR_ORDER + dataset.hasTheta0 + 1,dataset.AR_ORDER + dataset.hasTheta0 + 1);
         auto xold = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
-        auto alpha =Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
+        auto alpha = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
         auto vars =  TmpVars(
                 gradient,
                 hessian,
@@ -450,6 +435,22 @@ public:
                 std::shared_ptr<RegressionResult> tmpRes = optimizeNewton(dataset, false,( (bin_index == setup.bins_in_window) ? 50000 : setup.maxIter), x, vars);
                 tmpIter = tmpRes -> nIter;
                 resetParameters = false;
+            }
+
+            if (DEBUG){
+                std::cout << "---------------------------------------------------------------------" << std::endl;
+                std::cout << "xn:" << std::endl << dataset.xn << std::endl;
+                std::cout << "xt:" << std::endl << dataset.xt << std::endl;
+                std::cout << "eta:" << std::endl << dataset.eta << std::endl;
+                std::cout << "wn:" << std::endl << dataset.wn << std::endl;
+                std::cout << "observed events:" << std::endl;
+                for(auto& el : observed_events){
+                    std::cout << el << " ";
+                }
+                std::cout << std::endl;
+                std::cout << "wt: " << dataset.wt << std::endl;
+                std::cout << "current time: " << currentTime << std::endl;
+                std::cout << "x: " << std::endl << x << std::endl;
             }
 
             // Compute the actual parameters by applying right-censoring (if specified)

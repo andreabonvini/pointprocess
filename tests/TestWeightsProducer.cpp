@@ -6,11 +6,11 @@
 #include "TestWeightsProducer.h"
 
 
-TEST(tests,testAlphaOne)
+TEST(tests,testAlphaZero)
 {
-    ASSERT_EQ(testAlphaOne(),1);
+    ASSERT_EQ(testAlphaZero(),1);
 }
-TEST(tests,testAlphaDot5)
+TEST(tests,testAlphaDot9)
 {
     ASSERT_EQ(testAlphaDot9(),1);
 }

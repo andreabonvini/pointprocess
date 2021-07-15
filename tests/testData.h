@@ -16,7 +16,7 @@
 #include "../pointprocess/optimizers/LogNormalOptimizer.h"
 
 
-struct testData {
+struct testData{
     Eigen::VectorXd testOptimalThetap;
     double testOptimalTheta0;
     double testOptimalKappa;

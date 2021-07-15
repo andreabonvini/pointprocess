@@ -7,9 +7,9 @@
 #include "../pointprocess/WeightsProducer.h"
 #include <Eigen/Core>
 
-bool testAlphaOne(){
+bool testAlphaZero(){
     std::vector<double> target_distances = {2.0, 1.5, 1.0, 0.5, 0.0};
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     Eigen::VectorXd res = wp.produce(target_distances);
     Eigen::VectorXd expected(5);
     expected << 1.0,1.0,1.0,1.0,1.0;
@@ -21,7 +21,7 @@ bool testAlphaDot9(){
     auto wp = WeightsProducer(0.9);
     Eigen::VectorXd res = wp.produce(target_distances);
     Eigen::VectorXd expected(5);
-    expected << 0.897507,0.946056,0.997223,1.051117,1.108003;
+    expected <<0.165299, 0.25924, 0.40657, 0.637628,1.0;
     return (expected - res).norm() < 1e-4;
 }
 

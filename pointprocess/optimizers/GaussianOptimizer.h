@@ -41,12 +41,14 @@ public:
 
         boost::math::normal norm;
 
+        double rcEta = 1.0; // dataset.eta[dataset.eta.size() - 1];
+
         gradientRc <<
-        dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+        rcEta / (1.0 - computeCDF(x,dataset)) * (
                 - (dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / pow(x[0],2.0) * pdf(norm,(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0])
         )
         ,
-        dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+        rcEta / (1.0 - computeCDF(x,dataset)) * (
                 - 1.0 / x[0] * pdf(norm,(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0])
         )
         * dataset.xt;

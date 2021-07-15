@@ -51,20 +51,65 @@ add_library(
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
         pointprocess/serialize.h
-        src/examples/singleRegression.cpp)
+)
+
+add_executable(singleRegression src/examples/singleRegression.cpp
+        pointprocess/InterEventDistributions.h
+        pointprocess/WeightsProducer.cpp
+        pointprocess/WeightsProducer.h
+        pointprocess/PointProcessDataset.cpp
+        pointprocess/PointProcessDataset.h
+        pointprocess/RegressionPipeline.cpp
+        pointprocess/RegressionPipeline.h
+        pointprocess/optimizers/BaseOptimizer.cpp
+        pointprocess/optimizers/BaseOptimizer.h
+        pointprocess/optimizers/InverseGaussianOptimizer.cpp
+        pointprocess/optimizers/InverseGaussianOptimizer.H
+        ext/csv.h
+        pointprocess/optimizers/GaussianOptimizer.cpp
+        pointprocess/optimizers/GaussianOptimizer.h
+        pointprocess/optimizers/LogNormalOptimizer.cpp
+        pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/serialize.h)
+
+add_executable(fullRegression src/examples/fullRegression.cpp
+        pointprocess/InterEventDistributions.h
+        pointprocess/WeightsProducer.cpp
+        pointprocess/WeightsProducer.h
+        pointprocess/PointProcessDataset.cpp
+        pointprocess/PointProcessDataset.h
+        pointprocess/RegressionPipeline.cpp
+        pointprocess/RegressionPipeline.h
+        pointprocess/optimizers/BaseOptimizer.cpp
+        pointprocess/optimizers/BaseOptimizer.h
+        pointprocess/optimizers/InverseGaussianOptimizer.cpp
+        pointprocess/optimizers/InverseGaussianOptimizer.H
+        ext/csv.h
+        pointprocess/optimizers/GaussianOptimizer.cpp
+        pointprocess/optimizers/GaussianOptimizer.h
+        pointprocess/optimizers/LogNormalOptimizer.cpp
+        pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/serialize.h)
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
 find_package(Boost REQUIRED)
 message(STATUS "Boost Found: ${Boost_FOUND}")
 target_link_libraries(pointprocess Boost::boost)
+target_link_libraries(singleRegression Boost::boost)
+target_link_libraries(fullRegression Boost::boost)
+
 
 find_package(OpenMP REQUIRED)
 message(STATUS "OpenMP Found: ${OpenMP_FOUND}")
 target_link_libraries(pointprocess OpenMP::OpenMP_CXX)
+target_link_libraries(singleRegression OpenMP::OpenMP_CXX)
+target_link_libraries(fullRegression OpenMP::OpenMP_CXX)
 
 find_package (Eigen3 3.3 REQUIRED)
 message(STATUS "Eigen3 Found: ${Eigen3_FOUND}")
 target_link_libraries (pointprocess Eigen3::Eigen)
+target_link_libraries(singleRegression Eigen3::Eigen)
+target_link_libraries(fullRegression Eigen3::Eigen)
 
 # --------------------------------------------- Setup testing ---------------------------------------------
 # I followed the instructions at:

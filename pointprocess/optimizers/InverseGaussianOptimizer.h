@@ -62,8 +62,10 @@ public:
 
         boost::math::normal norm;
 
+        double rcEta = 1.0; // dataset.eta[dataset.eta.size() - 1];
+
         gradientRc <<
-        dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+        rcEta / (1.0 - computeCDF(x,dataset)) * (
               (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) - 1.0)/(2.0 * dataset.wt * sqrt(x[0]/dataset.wt))
               *
               pdf(norm, sqrt(x[0] / dataset.wt) * (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) - 1.0))
@@ -77,7 +79,7 @@ public:
                 exp(2.0 * x[0] / x.segment(1,x.size() - 1).dot(dataset.xt) + log(pdf(norm,- sqrt(x[0] / dataset.wt) * (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) + 1.0))))
        )
        ,
-        dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+        rcEta / (1.0 - computeCDF(x,dataset)) * (
                 (- sqrt(x[0] / dataset.wt) * dataset.wt / pow(x.segment(1,x.size() - 1).dot(dataset.xt),2.0))
                 *
                 pdf(norm,sqrt(x[0] / dataset.wt) * (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) - 1.0))
@@ -144,9 +146,10 @@ public:
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
 
         // Check constraints
-        assert (x[0] > 0.0);
-        assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
-        assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
+        // TODO: UNCOMMENT BELOW!
+//        assert (x[0] > 0.0);
+//        assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
+//        assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
 
         double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));

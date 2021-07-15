@@ -37,12 +37,13 @@ public:
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
         boost::math::normal norm;
 
+        double rcEta = 1.0; // dataset.eta[dataset.eta.size() - 1];
         gradientRc <<
-               - dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+               - rcEta / (1.0 - computeCDF(x,dataset)) * (
                        pdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) / x[0] ) * (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) / pow(x[0],2.0)
                )
                ,
-               - dataset.eta[dataset.eta.size() - 1] / (1.0 - computeCDF(x,dataset)) * (
+               - rcEta / (1.0 - computeCDF(x,dataset)) * (
                        pdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) / x[0] ) * 1.0 / (x[0] * x.segment(1,x.size() - 1).dot(dataset.xt))
                )
                * dataset.xt;
