@@ -20,20 +20,22 @@ int main() {
         events.push_back(td.testEvents[i]);
     }
 
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.02);
 
     auto dataset = PointProcessDataset::load(
             events, // event_times
-            9, // AR_ORDER
+            0, // AR_ORDER
             true, // hasTheta0
             wp
     );
 
-    auto optimizer = LogNormalOptimizer();
+    auto optimizer = InverseGaussianOptimizer();
     auto result = optimizer.singleRegression(
             dataset,
             false, // rightCensoring
             10000 // maxIter
     );
+
+    std::cout << "Mu: " << result->mu << std::endl;
     // Do stuff...
 }

@@ -67,7 +67,7 @@ bool testTaus(){
     double delta = 0.005;
     unsigned char AR_ORDER = 2;
     bool hasTheta0 = true;
-    auto setup = getPipelineSetup(testEvents, false, hasTheta0, AR_ORDER, windowLength, delta, 1, WeightsProducer(1.00));
+    auto setup = getPipelineSetup(testEvents, false, hasTheta0, AR_ORDER, windowLength, delta, 1, WeightsProducer(0.00));
     auto opt = InverseGaussianOptimizer();
     auto results = opt.train(setup);
 

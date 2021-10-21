@@ -23,7 +23,7 @@ bool gradientRcIsRight(const PointProcessDataset& dataset, PointProcessDistribut
     // retrieve dummy optimizer
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
 
     if (dist == PointProcessDistributions::Gaussian){
@@ -81,7 +81,7 @@ bool gradientIsRight(const PointProcessDataset& dataset, PointProcessDistributio
     // retrieve dummy optimizer
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
     if (dist == PointProcessDistributions::Gaussian){
         dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer());
@@ -136,7 +136,7 @@ bool hessianIsRight(const PointProcessDataset& dataset, PointProcessDistribution
     // retrieve dummy optimizer
     std::shared_ptr<BaseOptimizer> dummyOpt;
     std::vector<double> events = {};
-    auto wp = WeightsProducer(1.0);
+    auto wp = WeightsProducer(0.0);
     auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
     if (dist == PointProcessDistributions::Gaussian){
         dummyOpt = std::make_shared<GaussianOptimizer>(GaussianOptimizer());

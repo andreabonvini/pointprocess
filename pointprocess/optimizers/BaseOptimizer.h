@@ -21,6 +21,7 @@
 
 #define DEBUG 0
 
+
 struct TmpVars{
     Eigen::VectorXd gradient;
     Eigen::MatrixXd hessian;
@@ -169,8 +170,11 @@ public:
             }
 
             if (isinf(negloglikelRc)){
-                if (!cdfIsOne){ // TODO: put a break?
-                    std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
+                if (!cdfIsOne){ // TODO: put a break? Log this informations somewhere...
+                    // FIXME: this shouldn't happen
+                    // Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data...
+                    // Maybe you should use a distribution with a longer tail (e.g. LogNormal)
+                    // std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
                 }
                 cdfIsOne = true;
             }
@@ -221,10 +225,10 @@ public:
                     }
                     else if (!rightCensoring){
                         // Even if we don't apply rightCensoring we want to assure that the estimate for the current
-                        // time bin is greater than 0.0
-                        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) tmpNegloglikel = INFINITY;
+                        // time bin the sigma/kappa parameters are greater than 0.0
+                        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0 || x[0] < 0.0) tmpNegloglikel = INFINITY;
                     }
-                    // If the new point is better than the old one we go on.
+                    // If the new point is better than the old one we can stop and go on with the next time bin.
                     if (tmpNegloglikel != INFINITY && tmpNegloglikel < negloglikel) {
                         negloglikel = tmpNegloglikel;
                         GRADIENT_DESCENT_WORKED = true;
@@ -290,6 +294,7 @@ public:
     virtual double computePDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) = 0;
     virtual double computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) = 0;
     virtual double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) = 0;
+    virtual double estimate_x0(const PointProcessDataset& dataset) = 0;
 
     // Once the computePDF and computeCDF functions are implemented in a derived class, the computation of the Hazard Rate (Lambda)
     // and the censored negative log likelihood can be carried out here in the BaseOptimizer class. Moreover since we always approximate the
@@ -302,8 +307,12 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-        if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) return INFINITY;
         double rcEta = 1.0; // dataset.eta[dataset.eta.size() - 1];
+        if (
+                x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0
+                ||
+                x.segment(1,x.size() - 1).dot(dataset.xt) > dataset.wn.array().maxCoeff()
+        ) return INFINITY;
         return - rcEta * log(1.0 - computeCDF(x,dataset));
     };
 
@@ -383,6 +392,7 @@ public:
 
         auto startingPoint = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
         populateStartingPoint(startingPoint);
+
         auto x = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
         x = startingPoint;
         // Note that x will be updated inside updateNewton() and will represent the optimal distribution
@@ -431,7 +441,25 @@ public:
             // We create a PointProcessDataset for the current time bin
             auto dataset = PointProcessDataset::load(observed_events,setup.AR_ORDER,setup.hasTheta0,setup.weightsProducer, currentTime);
             if (resetParameters){
+
                 // The uncensored solution is a good starting point.
+                if (setup.AR_ORDER == 0 && setup.hasTheta0){
+                    // If we are directly estimating the mu parameter, we can trivially set as a starting point the
+                    // mean inter-event interval
+                    x[1] = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
+                    // TODO: do something like that for the AutoRegressive estimate too.
+                }
+                startingPoint = x;
+                // We can estimate sigma (or kappa) given our target intervals.
+                double tmp_x0 = dataset.wn.size() <= 2 ? x[0]: estimate_x0(dataset);
+                startingPoint[0] = tmp_x0;
+
+                if (computeLikel(startingPoint,dataset) < computeLikel(x,dataset)){
+                    // If our estimate for the first parameter is better w.r.t. the old value, we set our estimate as x[0].
+                    // Remember that this is a negative log likelihood, the lower the better.
+                    x[0] = tmp_x0;
+                }
+
                 std::shared_ptr<RegressionResult> tmpRes = optimizeNewton(dataset, false,( (bin_index == setup.bins_in_window) ? 50000 : setup.maxIter), x, vars);
                 tmpIter = tmpRes -> nIter;
                 resetParameters = false;

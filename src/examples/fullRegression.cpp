@@ -29,7 +29,6 @@ int main() {
 }
 //
 //int main(){
-//    // The file only contains column "a"
 //    io::CSVReader<2> in(std::string("../DATA/propofol/EDA/EDA_eeganes02new4.csv"));
 //    in.read_header(io::ignore_missing_column, "Times", "Amplitudes");
 //    double time,amp;

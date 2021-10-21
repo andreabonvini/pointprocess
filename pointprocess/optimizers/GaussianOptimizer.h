@@ -98,13 +98,28 @@ public:
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // Mus = dataset.xn * x.segment(1,x.size() - 1)
-        if ( x[0] < 0.0 || (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0.0 ) return INFINITY; // Check constraints.
-        return - dataset.eta.dot(((
-                log(1.0 / (x[0]*sqrt(2.0 * M_PI)))
-                -
-                0.5 * (dataset.wn.array() - (dataset.xn * x.segment(1,x.size() - 1)).array()).pow(2.0) / x[0]
-                ).matrix()));
+        if (
+                (x[0] < 0.0)
+                ||
+                ( (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0 )
+        ) return INFINITY; // Check constraints.
+        else {
+            return -dataset.eta.dot(((
+                    log(1.0 / (x[0] * sqrt(2.0 * M_PI)))
+                    -
+                    0.5 * (dataset.wn.array() - (dataset.xn * x.segment(1, x.size() - 1)).array()).pow(2.0) / x[0]
+            ).matrix()));
+        }
     };
+
+    double estimate_x0(const PointProcessDataset& dataset) override{
+        assert(dataset.wn.size() > 2); // the number of target events (dataset.wn) is < 2, can't estimate x0!
+        double mu_hat = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
+        double var = 1.0 / ((double)dataset.wn.size() - 1.0) * (dataset.wn.array() - mu_hat).pow(2.0).sum();
+        // Variance = 1 / (n - 1) * sum([w - mu_hat for w in wn])
+        // sigma = sqrt(Variance)
+        return sqrt(var);
+    }
 
 };
 

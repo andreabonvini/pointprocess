@@ -6,3 +6,4 @@ DATA/*
 .idea/*
 docs/build/*
 venv/*
+__pycache__/*

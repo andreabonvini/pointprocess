@@ -82,24 +82,37 @@ public:
         Eigen::VectorXd wn_ = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(wn_v.data(), (long) wn_v.size());
         // We now have to build a matrix xn s.t. for i = 0, ..., len(inter_events_times)-p-1 the i_th element of xn will be
         // xn[i] = [1, inter_events_times[i + p - 1], inter_events_times[i + p - 2], ..., rr[i]]
-        // a = inter_events_times[p - 1 : -1]
-        std::vector<double> a = std::vector<double>(inter_events_times.begin() + AR_ORDER_ - 1, inter_events_times.end() - 1);
-        // b = inter_events_times[p - 1 :: -1]
-        std::vector<double> b = std::vector<double>(inter_events_times.begin(), inter_events_times.begin() + AR_ORDER_);
-        std::reverse(b.begin(), b.end());
-        // xn = toeplitz(a, b)
-        Eigen::MatrixXd xn_tmp(a.size(),b.size());
-        toeplitz(a,b,xn_tmp);
-        // Note that the 1 at the beginning of each row is added only if the hasTheta0 parameter is set to True.
-        Eigen::MatrixXd xn_(xn_tmp.rows(),xn_tmp.cols() + hasTheta0_);
 
-        if (hasTheta0_){
-            auto ones = Eigen::MatrixXd::Ones( (long) xn_tmp.rows(),1);
-            xn_ << ones, xn_tmp;
+        /*
+         * Here we have to distinguish between the case in which (AR_ORDER == 0 && hasTheta == true) and the other cases.
+         * Note that when AR_ORDER = 0 and hasTheta0 = true we are directly optimizing for the mean of the distribution
+         * (since we would have mu = theta0) without trying to learn any autoregressive coefficient (which are mainly
+         * used for parametric spectral estimation when dealing with HRV data).
+         */
+        Eigen::MatrixXd xn_(events_times.size() - 1 - AR_ORDER_ , hasTheta0_ + AR_ORDER_);
+        assert(!(AR_ORDER_ == 0 && !hasTheta0_)); // This is the only forbidden case.
+        if (AR_ORDER_ == 0 && hasTheta0_){
+            xn_ << Eigen::MatrixXd::Ones( (long) wn_.size(),1);
         }
-        else{
-            xn_ = xn_tmp;
+        else {
+            // a = inter_events_times[p - 1 : -1]
+            std::vector<double> a = std::vector<double>(inter_events_times.begin() + AR_ORDER_ - 1,inter_events_times.end() - 1);
+            // b = inter_events_times[p - 1 :: -1]
+            std::vector<double> b = std::vector<double>(inter_events_times.begin(),inter_events_times.begin() + AR_ORDER_);
+            std::reverse(b.begin(), b.end());
+            // xn = toeplitz(a, b)
+            Eigen::MatrixXd xn_tmp(a.size(), b.size());
+            toeplitz(a, b, xn_tmp);
+            // Note that the 1 at the beginning of each row is added only if the hasTheta0 parameter is set to True.
+            if (hasTheta0_){
+                auto ones = Eigen::MatrixXd::Ones( (long) xn_tmp.rows(),1);
+                xn_ << ones, xn_tmp;
+            }
+            else{
+                xn_ = xn_tmp;
+            }
         }
+
         // xt = inter_events_times[-p:][::-1]
         std::vector<double> xt_v = std::vector<double>(inter_events_times.end() - AR_ORDER_, inter_events_times.end());
         std::reverse(xt_v.begin(), xt_v.end());
@@ -123,8 +136,8 @@ public:
         }
         // eta = weights_producer(current_time - uk)
         Eigen::VectorXd eta_ = weightsProducer.produce(target_distances);
-
-        return PointProcessDataset((unsigned char) a.size() , AR_ORDER_, hasTheta0_, xn_, wn_, eta_, xt_, wt_);
+        unsigned char N_SAMPLES = xn_.cols();
+        return PointProcessDataset(N_SAMPLES , AR_ORDER_, hasTheta0_, xn_, wn_, eta_, xt_, wt_);
     }
 };
 
