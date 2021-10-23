@@ -19,4 +19,4 @@ and [Boost](https://www.boost.org).
 
 # Documentation
 
-The technical and scientific *documentation* for this repository is available [here](https://pointprocess.readthedocs.io/en/latest/).
+The technical and scientific *documentation* for this repository is available [here](https://pointprocess.readthedocs.io/en/latest/). (WIP)

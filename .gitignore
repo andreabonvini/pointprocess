@@ -4,6 +4,5 @@ ext/Google_tests/lib/*
 DATA/*
 .DS_Store
 .idea/*
-docs/build/*
 venv/*
 __pycache__/*
