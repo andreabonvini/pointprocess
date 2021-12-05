@@ -8,9 +8,10 @@
 
 enum PointProcessDistributions : unsigned  char
 {
-    InverseGaussian,
-    LogNormal,
-    Gaussian,
+    Gaussian = 0,
+    InverseGaussian = 1,
+    LogNormal = 2,
+
 };
 
 #endif //POINTPROCESS_INTEREVENTDISTRIBUTIONS_H

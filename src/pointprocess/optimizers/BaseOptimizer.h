@@ -128,6 +128,7 @@ public:
     explicit BaseOptimizer(PointProcessDistributions distribution){
         this->distribution = distribution;
     }
+    virtual ~BaseOptimizer() = default;
 
     virtual std::shared_ptr<RegressionResult> optimizeNewton(
             const PointProcessDataset& dataset,
@@ -286,6 +287,7 @@ public:
                 maxGrad);
     };
 
+
     // The following functions are distribution-specific.
     virtual void populateStartingPoint(Eigen::VectorXd& startingPoint) = 0;
     virtual void updateGradient(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradient) = 0;
@@ -382,7 +384,7 @@ public:
 
         // Initialize results vector and some useful variables
         std::vector<std::shared_ptr<RegressionResult>> results;
-        results.reserve(setup.bins - setup.bins_in_window);
+        results.reserve(setup.bins - setup.bins_in_window + 1);
         double currentTime;
         double windowLength = setup.delta * (double) (setup.bins_in_window);
         bool resetParameters = true;
@@ -463,22 +465,6 @@ public:
                 std::shared_ptr<RegressionResult> tmpRes = optimizeNewton(dataset, false,( (bin_index == setup.bins_in_window) ? 50000 : setup.maxIter), x, vars);
                 tmpIter = tmpRes -> nIter;
                 resetParameters = false;
-            }
-
-            if (DEBUG){
-                std::cout << "---------------------------------------------------------------------" << std::endl;
-                std::cout << "xn:" << std::endl << dataset.xn << std::endl;
-                std::cout << "xt:" << std::endl << dataset.xt << std::endl;
-                std::cout << "eta:" << std::endl << dataset.eta << std::endl;
-                std::cout << "wn:" << std::endl << dataset.wn << std::endl;
-                std::cout << "observed events:" << std::endl;
-                for(auto& el : observed_events){
-                    std::cout << el << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "wt: " << dataset.wt << std::endl;
-                std::cout << "current time: " << currentTime << std::endl;
-                std::cout << "x: " << std::endl << x << std::endl;
             }
 
             // Compute the actual parameters by applying right-censoring (if specified)

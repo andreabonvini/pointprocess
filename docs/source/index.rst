@@ -44,7 +44,7 @@ A C++ Library for Point Process analysis.
 Quick Guide
 ************
 
-Once you have installed the needed dependencies and built the project through CMake, you can call the main function `regr_likel` from a Python this way:
+Once you have installed the needed dependencies and built the project through CMake, you can call the main function `regr_likel` from Python by following these instructions:
 
 
 Setup Python environment (e.g. in Jupyter)

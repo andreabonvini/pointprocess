@@ -2,11 +2,13 @@
 // Created by Andrea Bonvini on 19/05/21.
 //
 
-#include "../../pointprocess/InterEventDistributions.h"
-#include "../../pointprocess/optimizers/InverseGaussianOptimizer.h"
-#include "../../pointprocess/WeightsProducer.h"
-#include "../../tests/testData.h"
-#include "../../pointprocess/serialize.h"
+#include "../pointprocess/InterEventDistributions.h"
+#include "../pointprocess/optimizers/InverseGaussianOptimizer.h"
+#include "../pointprocess/WeightsProducer.h"
+#include "../pointprocess/serialize.h"
+
+// TODO: include it directly as a .csv...
+#include "../../tests/data/testData.h"
 
 
 
