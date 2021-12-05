@@ -8,12 +8,12 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include "../pointprocess/PointProcessDataset.h"
-#include "../pointprocess/InterEventDistributions.h"
-#include "../pointprocess/optimizers/BaseOptimizer.h"
-#include "../pointprocess/optimizers/GaussianOptimizer.h"
-#include "../pointprocess/optimizers/InverseGaussianOptimizer.h"
-#include "../pointprocess/optimizers/LogNormalOptimizer.h"
+#include "../../src/pointprocess/PointProcessDataset.h"
+#include "../../src/pointprocess/InterEventDistributions.h"
+#include "../../src/pointprocess/optimizers/BaseOptimizer.h"
+#include "../../src/pointprocess/optimizers/GaussianOptimizer.h"
+#include "../../src/pointprocess/optimizers/InverseGaussianOptimizer.h"
+#include "../../src/pointprocess/optimizers/LogNormalOptimizer.h"
 
 
 struct testData{

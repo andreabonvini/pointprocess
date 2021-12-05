@@ -1,6 +1,6 @@
 # Project exclude paths
 build/
-ext/Google_tests/lib/*
+src/external/Google_tests/lib/*
 DATA/*
 .DS_Store
 .idea/*

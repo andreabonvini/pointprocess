@@ -44,7 +44,7 @@ A C++ Library for Point Process analysis.
 Quick Guide
 ************
 
-Once you have installed the needed dependencies and built the project through CMake, you can call the main function `regr_likel` from a Python this way:
+Once you have installed the needed dependencies and built the project through CMake, you can call the main function `regr_likel` from Python by following these instructions:
 
 
 Setup Python environment (e.g. in Jupyter)
@@ -169,7 +169,7 @@ In order to follow this brief example you should download `rr.csv` from `this`_ 
     # Compute spectral features.
 
     """
-    The computation of the spectreal features is extremely slow for now, the code should be ported completely in C++ and called through additional Python bindings.
+    The computation of the spectral features is extremely slow for now, the code should be ported completely in C++ and called through additional Python bindings.
     Note that hrv_indices() returns an HeartRateVariabilityIndices object (see pointprocesslib.py for more details):
 
     @dataclass

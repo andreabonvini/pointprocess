@@ -18,6 +18,8 @@
 #include <stdexcept>
 #include <cmath>
 #include <iostream>
+#include <functional>
+#include <unordered_map>
 
 struct Stats{
     double ksDistance = 0.0;
@@ -122,7 +124,7 @@ PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc
 }
 
 
-static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared_ptr<RegressionResult>>& results, const PipelineSetup& setup){
+static void computeTaus(std::vector<double>& taus ,const std::vector<double>& lambdas, const PipelineSetup& setup){
 
     double currentTime;
     bool eventHappened;
@@ -158,13 +160,27 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<std::shared
             intL = 0.0;
         }
         else{
-            intL = intL + setup.delta * results[bin_index - offset]->lambda;
+            intL = intL + setup.delta * lambdas[bin_index - offset];
         }
-        if (bin_index <= results.size()){
-            pr =  results[bin_index - offset]->lambda;
+        if (bin_index <= lambdas.size()){
+            pr =  lambdas[bin_index - offset];
         }
     }
 }
+
+
+// Factory design pattern (https://hackernoon.com/desing-patterns-exploring-factory-method-in-modern-c-hi1h3uvw)
+class OptimizersFactory {
+    std::unordered_map<PointProcessDistributions, std::function<std::unique_ptr<BaseOptimizer>() >>  optimizer_factories_map;
+
+public:
+    OptimizersFactory() {
+        optimizer_factories_map[PointProcessDistributions::Gaussian] = [] { return std::make_unique<GaussianOptimizer>(); };
+        optimizer_factories_map[PointProcessDistributions::InverseGaussian] = [] { return std::make_unique<InverseGaussianOptimizer>(); };
+        optimizer_factories_map[PointProcessDistributions::LogNormal] = [] { return std::make_unique<LogNormalOptimizer>(); };
+    }
+    std::unique_ptr<BaseOptimizer> create(PointProcessDistributions dist) { return optimizer_factories_map[dist](); }
+};
 
 
 class RegressionPipeline{
@@ -229,36 +245,20 @@ public:
         auto pipelineSetup = getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
                                               maxIter, weightsProducer);
 
-        // TODO: remove switch statement and factorize...
-        switch (this->distribution) {
-            case PointProcessDistributions::InverseGaussian: {
-                auto optimizer = InverseGaussianOptimizer();
-                auto results = optimizer.train(pipelineSetup);
-                std::vector<double> taus;
-                computeTaus(taus, results, pipelineSetup);
-                auto stats = computeStats(taus);
-                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
-            }
-            case PointProcessDistributions::LogNormal: {
-                auto optimizer = LogNormalOptimizer();
-                auto results = optimizer.train(pipelineSetup);
-                std::vector<double> taus;
-                computeTaus(taus, results, pipelineSetup);
-                auto stats = computeStats(taus);
-                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
-            }
-            case PointProcessDistributions::Gaussian: {
-                auto optimizer = GaussianOptimizer();
-                auto results = optimizer.train(pipelineSetup);
-                std::vector<double> taus;
-                computeTaus(taus, results, pipelineSetup);
-                auto stats = computeStats(taus);
-                return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
-            }
-            default:
-                throw std::logic_error("Please, insert a valid InterEvent distribution.");
+        auto factory = OptimizersFactory();
+        auto optimizer = factory.create(distribution);
+        auto results = optimizer->train(pipelineSetup);
 
-        }
+
+        std::vector<double> taus;
+        // Creating a new vector containing just the instantaneous lambda values to compute the taus.
+        std::vector<double> lambdas;
+        lambdas.reserve(results.size());
+        std::transform(results.begin(), results.end(), std::back_inserter(lambdas),
+                       [](auto& res) { return res->lambda; });
+        computeTaus(taus, lambdas, pipelineSetup);
+        auto stats = computeStats(taus);
+        return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
     }
 };
 
