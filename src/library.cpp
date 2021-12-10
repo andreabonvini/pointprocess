@@ -12,7 +12,7 @@
 
 extern "C" void regrlikel(
         unsigned int n_events,
-        double c_events_pointer[n_events],
+        double c_events_pointer[],
         double windowLength,
         double delta,
         unsigned char AR_ORDER,
