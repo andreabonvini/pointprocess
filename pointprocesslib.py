@@ -7,7 +7,7 @@ from scipy.special import erfinv
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import List
-
+from sys import platform
 
 # TODO: Ideally all the functions in this file (except from regr_likel) should be implemented in C++ to obtain a
 #  considerable gain in efficiency and to directly serialize all the needed information in a .csv file.
@@ -257,16 +257,12 @@ def regrlikel(
 
 def _get_extension() -> str:
 
-    # TODO: temporarily hard-coded... automate this stuff.
-    ON_MAC = True
-    ON_WINDOWS = False
-    ON_LINUX = False
-
-    if ON_MAC:
+    # Checking whether the platform is MacOs, Windows or Linux.
+    if platform == "darwin":
         return ".dylib"
-    elif ON_WINDOWS:
+    elif platform == "win32":
         return ".DLL"
-    elif ON_LINUX:
+    elif platform == "linux" or platform == "linux2":
         return ".so"
     else:
         raise Exception("_get_extension() function is broken.")
@@ -274,7 +270,7 @@ def _get_extension() -> str:
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 LIB_NAME = "libpointprocess" + _get_extension()
-lib_file = os.path.join(current_path, "build", LIB_NAME)
+lib_file = os.path.join(current_path, "build/src", LIB_NAME)
 cdll = ctypes.cdll.LoadLibrary(lib_file)
 c_double_p = ctypes.POINTER(ctypes.c_double)
 cdll.regrlikel.argtypes = [
