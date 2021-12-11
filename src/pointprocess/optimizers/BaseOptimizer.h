@@ -10,6 +10,8 @@
 #include <vector>
 #include <numeric>
 #include <iostream>
+#include <math.h>
+#include <memory>
 
 #include "../WeightsProducer.h"
 #include "../PointProcessDataset.h"

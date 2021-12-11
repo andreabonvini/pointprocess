@@ -82,7 +82,8 @@ In order to follow this brief example you should download `rr.csv` from `this`_ 
     import numpy as np
 
     OUTPUT_DIR = "outputs"
-    os.mkdir(OUTPUT_DIR)
+    if not os.path.exists(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
     OUTPUT_DATA = os.path.join(OUTPUT_DIR,"InverseGaussianHRVData.csv")
     OUTPUT_TAUS = os.path.join(OUTPUT_DIR,"InverseGaussianHRVTaus.csv")
 
@@ -116,25 +117,25 @@ In order to follow this brief example you should download `rr.csv` from `this`_ 
 .. code-block:: python
 
     # Start regression (computation time is currently circa 20 s for 10 minutes of data with delta = 0.005 ms)
-    pointprocesslib.regrlikel(
-                    events = events,
-                    window_length = WINDOW_LENGTH,
-                    delta = DELTA,
-                    ar_order = AR_ORDER,
-                    has_theta0 = True,
-                    alpha = ALPHA,
-                    distribution = DISTRIBUTION,
-                    right_censoring = True,
-                    output_taus_path = OUTPUT_TAUS,
-                    output_data_path = OUTPUT_DATA
-                )
+    regrlikel(
+                events = events,
+                window_length = WINDOW_LENGTH,
+                delta = DELTA,
+                ar_order = AR_ORDER,
+                has_theta0 = True,
+                alpha = ALPHA,
+                distribution = DISTRIBUTION,
+                right_censoring = True,
+                output_taus_path = OUTPUT_TAUS,
+                output_data_path = OUTPUT_DATA
+             )
 
 .. code-block:: python
 
 
     # Load results...
-    taus = pd.read_csv(outputTaus)["Taus"]
-    data = pd.read_csv(outputData)
+    taus = pd.read_csv(OUTPUT_TAUS)["Taus"]
+    data = pd.read_csv(OUTPUT_DATA)
     # Plot Mu
     fig, ax = plt.subplots(figsize=(12, 10))
     ax.plot(data["Time"] / 60.0, data["Mu"], label='First moment of IG regression', color='blue')

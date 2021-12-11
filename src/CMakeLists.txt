@@ -42,7 +42,7 @@ add_library(
         pointprocess/optimizers/BaseOptimizer.cpp
         pointprocess/optimizers/BaseOptimizer.h
         pointprocess/optimizers/InverseGaussianOptimizer.cpp
-        pointprocess/optimizers/InverseGaussianOptimizer.H
+        pointprocess/optimizers/InverseGaussianOptimizer.h
         external/csv.h
         pointprocess/optimizers/GaussianOptimizer.cpp
         pointprocess/optimizers/GaussianOptimizer.h
@@ -62,7 +62,7 @@ add_executable(singleRegression examples/singleRegression.cpp
         pointprocess/optimizers/BaseOptimizer.cpp
         pointprocess/optimizers/BaseOptimizer.h
         pointprocess/optimizers/InverseGaussianOptimizer.cpp
-        pointprocess/optimizers/InverseGaussianOptimizer.H
+        pointprocess/optimizers/InverseGaussianOptimizer.h
         external/csv.h
         pointprocess/optimizers/GaussianOptimizer.cpp
         pointprocess/optimizers/GaussianOptimizer.h
@@ -81,7 +81,7 @@ add_executable(fullRegression examples/fullRegression.cpp
         pointprocess/optimizers/BaseOptimizer.cpp
         pointprocess/optimizers/BaseOptimizer.h
         pointprocess/optimizers/InverseGaussianOptimizer.cpp
-        pointprocess/optimizers/InverseGaussianOptimizer.H
+        pointprocess/optimizers/InverseGaussianOptimizer.h
         external/csv.h
         pointprocess/optimizers/GaussianOptimizer.cpp
         pointprocess/optimizers/GaussianOptimizer.h
