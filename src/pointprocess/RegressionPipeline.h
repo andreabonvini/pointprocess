@@ -11,15 +11,14 @@
 #include "optimizers/InverseGaussianOptimizer.h"
 #include "optimizers/GaussianOptimizer.h"
 #include "optimizers/LogNormalOptimizer.h"
+#include "optimizers/OptimizersFactory.h"
+
 #include "WeightsProducer.h"
-#include <utility>
 #include <vector>
 #include <functional>
 #include <stdexcept>
 #include <cmath>
 #include <iostream>
-#include <functional>
-#include <unordered_map>
 
 struct Stats{
     double ksDistance = 0.0;
@@ -66,8 +65,8 @@ struct PointProcessResult{ // TODO: add Documentation
     }
 };
 
-
-static Stats computeStats(std::vector<double>& taus){
+namespace { 
+Stats computeStats(std::vector<double>& taus){
     std::vector<double> rescaledTimes;
     Eigen::VectorXd z(taus.size());
     for (long i = 0 ; i < taus.size(); i++){
@@ -91,7 +90,7 @@ static Stats computeStats(std::vector<double>& taus){
 }
 
 
-PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
+PipelineSetup getPipelineSetup(const std::vector<double>& events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_, double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer){
     /**
      * This function returns a PipelineSetup object containing a series of useful parameters for a fullRegression(),
      * such as:
@@ -123,24 +122,20 @@ PipelineSetup static getPipelineSetup(const std::vector<double>& events, bool rc
     return PipelineSetup(delta, events, rc, hasTheta0_, AR_ORDER_, last_event_index, bins, bins_in_window, maxIter, weightsProducer);
 }
 
+void computeTaus(std::vector<double>& taus ,const std::vector<double>& lambdas, const PipelineSetup& setup){
 
-static void computeTaus(std::vector<double>& taus ,const std::vector<double>& lambdas, const PipelineSetup& setup){
-
-    double currentTime;
-    bool eventHappened;
     unsigned long last_event_index = setup.last_event_index;
-    double dt;
     double intL = 0.0;
     double pr = 0.0;
     bool wait = true;
 
     unsigned long offset = setup.bins_in_window;
     for (unsigned long bin_index = offset; bin_index <= setup.bins; bin_index++) {
-        currentTime = (double) bin_index * setup.delta;
-        eventHappened = setup.events[last_event_index + 1] <= currentTime;
+        double currentTime = (double) bin_index * setup.delta;
+        bool eventHappened = setup.events[last_event_index + 1] <= currentTime;
         if (eventHappened){
             last_event_index++;
-            dt = setup.events[last_event_index] - (currentTime - setup.delta);
+            double dt = setup.events[last_event_index] - (currentTime - setup.delta);
             intL = intL + dt * pr;
             if (!wait) {
                 taus.push_back(intL);
@@ -167,56 +162,27 @@ static void computeTaus(std::vector<double>& taus ,const std::vector<double>& la
         }
     }
 }
-
-
-// Factory design pattern (https://hackernoon.com/desing-patterns-exploring-factory-method-in-modern-c-hi1h3uvw)
-class OptimizersFactory {
-    std::unordered_map<PointProcessDistributions, std::function<std::unique_ptr<BaseOptimizer>() >>  optimizer_factories_map;
-
-public:
-    OptimizersFactory() {
-        optimizer_factories_map[PointProcessDistributions::Gaussian] = [] { return std::make_unique<GaussianOptimizer>(); };
-        optimizer_factories_map[PointProcessDistributions::InverseGaussian] = [] { return std::make_unique<InverseGaussianOptimizer>(); };
-        optimizer_factories_map[PointProcessDistributions::LogNormal] = [] { return std::make_unique<LogNormalOptimizer>(); };
-    }
-    std::unique_ptr<BaseOptimizer> create(PointProcessDistributions dist) { return optimizer_factories_map[dist](); }
-};
-
+}
 
 class RegressionPipeline{
+private:
+  // One of the enumeration values of PointProcessDistributions, either,  InverseGaussian, LogNormal, Gaussian
+  PointProcessDistributions distribution;
+  
+  // AR order to use for the estimation of the first moment of the given distribution.
+  unsigned char AR_ORDER;
+  
+  // if the AR model takes account for a mean/theta0 parameter.
+  bool hasTheta0;
+  
 public:
-    PointProcessDistributions distribution;
-    unsigned char AR_ORDER;
-    bool hasTheta0;
-    RegressionPipeline(
-            PointProcessDistributions distribution,
-            unsigned char AR_ORDER,
-            bool hasTheta0
-            ){
-        /******************************************************************
-         * Parameters:
-         *     distribution: One of the enumeration values of PointProcessDistributions, either
-         *         1) InverseGaussian
-         *         2) LogNormal
-         *         3) Gaussian
-         *     AR_ORDER_: AR order to use for the estimation of the first moment of the given distribution.
-         *     hasTheta0_: if the AR model takes account for a mean/theta0 parameter.
-         *
-         *****************************************************************/
-        this->distribution = distribution;
-        this->AR_ORDER = AR_ORDER;
-        this->hasTheta0 = hasTheta0;
-    }
-
-    [[nodiscard]] PointProcessResult fullRegression(
-            const std::vector<double>& events_times,
-            double windowLength = 60.0,
-            double delta = 0.005,
-            bool rightCensoring = true,
-            unsigned int maxIter = 1000,
-            WeightsProducer weightsProducer = WeightsProducer()
-            ) const{
-        /**************************************************************************************************************
+  RegressionPipeline(
+    PointProcessDistributions distribution,
+    unsigned char AR_ORDER,
+    bool hasTheta0
+    );
+  
+    /**************************************************************************************************************
          * This function implements part of the pipeline suggested by Riccardo Barbieri, Eric C. Matten,
          * Abdul Rasheed A. Alabi and Emery N. Brown in the paper:
          * "A point-process model of human heartbeat intervals:
@@ -235,31 +201,15 @@ public:
          *     rightCensoring: if the regression should take into account right-censoring or not, if true we should have
          *                     more accurate estimates for the first and second moment of the selected distribution.
          *     maxIter: maximum number of iterations allowed for each optimization procedure.
-         ************************************************************************************************************/
-
-        // We want the first event to be at time 0 (events = events_times - events_times[0])
-        std::vector<double> events = events_times;
-        double t0 = events_times[0];
-        std::transform(events_times.begin(), events_times.end(), events.begin(),[&](auto& value){ return value - t0;});
-
-        auto pipelineSetup = getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
-                                              maxIter, weightsProducer);
-
-        auto factory = OptimizersFactory();
-        auto optimizer = factory.create(distribution);
-        auto results = optimizer->train(pipelineSetup);
-
-
-        std::vector<double> taus;
-        // Creating a new vector containing just the instantaneous lambda values to compute the taus.
-        std::vector<double> lambdas;
-        lambdas.reserve(results.size());
-        std::transform(results.begin(), results.end(), std::back_inserter(lambdas),
-                       [](auto& res) { return res->lambda; });
-        computeTaus(taus, lambdas, pipelineSetup);
-        auto stats = computeStats(taus);
-        return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
-    }
+    ************************************************************************************************************/
+    [[nodiscard]] PointProcessResult fullRegression(
+            const std::vector<double>& events_times,
+            double windowLength,
+            double delta,
+            bool rightCensoring,
+            unsigned int maxIter,
+            WeightsProducer weightsProducer
+      ) const;
 };
 
 
