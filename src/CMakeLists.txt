@@ -1,6 +1,7 @@
 
 
 
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEIGEN_NO_DEBUG")
@@ -48,6 +49,7 @@ add_library(
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/optimizers/OptimizersFactory.h
         pointprocess/serialize.h
 )
 
@@ -68,6 +70,7 @@ add_executable(singleRegression examples/singleRegression.cpp
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/optimizers/OptimizersFactory.h
         pointprocess/serialize.h)
 
 add_executable(fullRegression examples/fullRegression.cpp
@@ -87,6 +90,7 @@ add_executable(fullRegression examples/fullRegression.cpp
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/optimizers/OptimizersFactory.h
         pointprocess/serialize.h)
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
