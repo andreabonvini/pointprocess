@@ -37,8 +37,14 @@ jobs:
           run: |
             printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
             printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
-            shell: bash
-  
+            
+        - name: Install Eigen3
+          uses: kupns-aka-kupa/setup-eigen3@v1
+          with:
+            version: 3.4.0
+          env:
+            CMAKE_GENERATOR: ${{ matrix.gen }}
+            
         # Runs a single command using the runners shell
         - name: Build
           shell: bash
