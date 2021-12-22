@@ -55,6 +55,6 @@ jobs:
         # Runs a set of commands using the runners shell
         - name: Run Tests
           run: |
-            ls && cd tests
+            ls && cd build/tests
             pwd
             ./RunTests
