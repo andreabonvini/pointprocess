@@ -24,36 +24,24 @@ jobs:
       steps:
         # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
         - uses: actions/checkout@v2
-        - name: Build Boost
-          id: boost
-          uses: egor-tensin/build-boost@v1
-          with:
-              version: 1.71.0
-              libraries: filesystem program_options system
-              platform: x64
-              configuration: Release
-
-        - name: Show paths
+        - name: Install Boost
           run: |
-            printf 'Boost has been unpacked to: %s\n' '${{ steps.boost.outputs.root }}'
-            printf 'Libraries can be found here: %s\n' '${{ steps.boost.outputs.librarydir }}'
-            
-        - name: Install Eigen3
-          uses: kupns-aka-kupa/setup-eigen3@v1
-          with:
-            version: 3.4.0
-          env:
-            CMAKE_GENERATOR: ${{ matrix.gen }}
-            
+              sudo apt update
+              sudo apt install -y libboost-all-dev
+        - name: Install Eigen
+          run: |
+              sudo apt update
+              sudo apt install libeigen3-dev
         # Runs a single command using the runners shell
         - name: Build
           shell: bash
           run: |
               mkdir -p build && cd build
               cmake ..
+              make
 
         # Runs a set of commands using the runners shell
         - name: Run Tests
           run: |
-            cd tests/
-            ls
+            cd build/tests/
+            ./RunTests
