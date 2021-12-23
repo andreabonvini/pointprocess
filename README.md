@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/andreabonvini/pointprocess/CI?event=push&label=Build&logo=Github-Actions)]
 
 
-![](docs/images/ppbig.png)
+![ppbig](docs/images/ppbig.png)
 
 This repository contains a `C++` implementation of the `MATLAB` software provided by Riccardo Barbieri and Luca
 Citi [here](http://users.neurostat.mit.edu/barbieri/pphrv).
