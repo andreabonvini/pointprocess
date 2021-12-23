@@ -6,8 +6,10 @@
 #define POINTPROCESS_INVERSEGAUSSIANOPTIMIZER_H
 
 #include "BaseOptimizer.h"
+#include "../PointProcessUtils.h"
 #include "../InterEventDistributions.h"
 #include "../PointProcessDataset.h"
+#include "../PointProcessUtils.h"
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <deque>
@@ -16,25 +18,8 @@
 #include <fstream>
 #include <boost/math/distributions/normal.hpp>
 
-struct IGRegressionResult : RegressionResult {
-    double kappa;
-    IGRegressionResult(double theta0_,
-                       const Eigen::VectorXd& thetaP_,
-                       double mu,
-                       double sigma,
-                       double lambda,
-                       double meanInterval,
-                       long nIter,
-                       double likelihood,
-                       double maxGrad,
-                       double kappa)
-                       : RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad) {
-        this->kappa = kappa;
-    }
-};
 
-
-class InverseGaussianOptimizer : public BaseOptimizer{
+class InverseGaussianOptimizer : public BaseOptimizer {
 public:
 
     explicit InverseGaussianOptimizer(): BaseOptimizer(PointProcessDistributions::InverseGaussian){};
@@ -149,7 +134,7 @@ public:
         }
     };
 
-    std::shared_ptr<RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) override{
+    std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) override{
 
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -165,7 +150,7 @@ public:
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
         double sigma = sqrt(pow(mu,3.0) / x[0]); // Variance = Mu^3 /Kappa
 
-        return std::make_shared<IGRegressionResult>(
+        return std::make_shared<pp::IGRegressionResult>(
                 dataset.hasTheta0 ? x[1] : 0.0,
                 dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1),
                 mu,

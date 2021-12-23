@@ -24,7 +24,7 @@ namespace pointprocess::tests {
 
             std::vector<double> events = {};
             WeightsProducer wp = WeightsProducer(0.0);
-            PipelineSetup set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
+            pp::PipelineSetup set = pp::PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
             std::unordered_map<PointProcessDistributions, std::shared_ptr<BaseOptimizer>> dist2opt = {
                     {PointProcessDistributions::Gaussian, std::make_shared<GaussianOptimizer>(GaussianOptimizer())},
                     {PointProcessDistributions::InverseGaussian, std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer())},
@@ -136,7 +136,7 @@ namespace pointprocess::tests {
 
             std::vector<double> events = {};
             auto wp = WeightsProducer(0.0);
-            auto set = PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
+            auto set = pp::PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
 
             PointProcessDistributions dist = GetParam();
             auto dummyOpt = dist2opt[dist];

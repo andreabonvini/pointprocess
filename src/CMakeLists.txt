@@ -49,9 +49,8 @@ add_library(
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
-        pointprocess/optimizers/OptimizersFactory.h
-        pointprocess/serialize.h
-)
+        pointprocess/OptimizersFactory.h
+        pointprocess/PointProcessUtils.h pointprocess/PointProcessUtils.cpp)
 
 add_executable(singleRegression examples/singleRegression.cpp
         pointprocess/InterEventDistributions.h
@@ -70,8 +69,8 @@ add_executable(singleRegression examples/singleRegression.cpp
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
-        pointprocess/optimizers/OptimizersFactory.h
-        pointprocess/serialize.h)
+        pointprocess/OptimizersFactory.h
+        pointprocess/PointProcessUtils.h pointprocess/PointProcessUtils.cpp)
 
 add_executable(fullRegression examples/fullRegression.cpp
         pointprocess/InterEventDistributions.h
@@ -90,8 +89,8 @@ add_executable(fullRegression examples/fullRegression.cpp
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
-        pointprocess/optimizers/OptimizersFactory.h
-        pointprocess/serialize.h)
+        pointprocess/OptimizersFactory.h
+        pointprocess/PointProcessUtils.h pointprocess/PointProcessUtils.cpp)
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
 find_package(Boost REQUIRED)

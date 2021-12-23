@@ -1,12 +1,13 @@
 #include <vector>
+#include "../pointprocess/PointProcessUtils.h"
 #include "../pointprocess/InterEventDistributions.h"
 #include "../pointprocess/RegressionPipeline.h"
 #include "../pointprocess/WeightsProducer.h"
-#include "../pointprocess/serialize.h"
 #include "../external/csv.h"
 
 // TODO: include it directly as a .csv...
 #include "../../tests/data/testData.h"
+
 
 
 int main() {
@@ -24,7 +25,7 @@ int main() {
             1000,  // maxIter
             WeightsProducer(0.05)
             );
-    ppResData2csv(ppRes, std::string("myData.csv"));
-    ppResTaus2csv(ppRes, std::string("myTaus.csv"));
+    pp::utils::serialize::ppResData2csv(ppRes, std::string("myData.csv"));
+    pp::utils::serialize::ppResTaus2csv(ppRes, std::string("myTaus.csv"));
 }
 

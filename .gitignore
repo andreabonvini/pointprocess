@@ -1,6 +1,6 @@
 # Project exclude paths
-build/
-src/external/Google_tests/lib/*
+build/*
+cmake-build-debug/*
 DATA/*
 .DS_Store
 .idea/*

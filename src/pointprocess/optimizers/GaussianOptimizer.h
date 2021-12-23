@@ -112,15 +112,6 @@ public:
         }
     };
 
-    double estimate_x0(const PointProcessDataset& dataset) override{
-        assert(dataset.wn.size() > 2); // the number of target events (dataset.wn) is < 2, can't estimate x0!
-        double mu_hat = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
-        double var = 1.0 / ((double)dataset.wn.size() - 1.0) * (dataset.wn.array() - mu_hat).pow(2.0).sum();
-        // Variance = 1 / (n - 1) * sum([w - mu_hat for w in wn])
-        // sigma = sqrt(Variance)
-        return sqrt(var);
-    }
-
 };
 
 
