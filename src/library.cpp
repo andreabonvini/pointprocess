@@ -2,12 +2,9 @@
 // Created by Andrea Bonvini on 18/05/21.
 //
 
-#include "pointprocess/optimizers/BaseOptimizer.h"
-#include "pointprocess/optimizers/InverseGaussianOptimizer.h"
-#include "pointprocess/optimizers/LogNormalOptimizer.h"
-#include "pointprocess/optimizers/GaussianOptimizer.h"
-#include "pointprocess/serialize.h"
-
+#include "pointprocess/OptimizersFactory.h"
+#include "pointprocess/PointProcessUtils.h"
+#include "pointprocess/RegressionPipeline.h"
 
 
 extern "C" void regrlikel(
@@ -33,10 +30,10 @@ extern "C" void regrlikel(
     auto pip = RegressionPipeline(distribution, AR_ORDER, hasTheta0);
     auto ppRes = pip.fullRegression(events,windowLength,delta,rightCensoring,maxIter, WeightsProducer(alpha));
     if (serializeData) {
-        ppResData2csv(ppRes, std::string(outputDataName));
+        pp::utils::serialize::ppResData2csv(ppRes, std::string(outputDataName));
     }
 
-    ppResTaus2csv(ppRes, std::string(outputTausName));
+    pp::utils::serialize::ppResTaus2csv(ppRes, std::string(outputTausName));
 }
 
 
