@@ -17,7 +17,13 @@ find_package (Eigen3 3.3 REQUIRED)
 find_package(Boost REQUIRED)
 
 
-# We define single executable (RunTests.cpp) that will run all the available tests.
-add_executable(RunTests RunTests.cpp TestWeightsProducer.h TestPointProcessDataset.h)
+# We define a single executable (RunTests.cpp) that will run all the available tests.
+add_executable(
+        RunTests RunTests.cpp
+        ../src/pointprocess/optimizers/BaseOptimizer.cpp
+        ../src/pointprocess/optimizers/BaseOptimizer.h
+        ../src/pointprocess/PointProcessUtils.cpp
+        ../src/pointprocess/PointProcessUtils.h
+)
 
 target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)

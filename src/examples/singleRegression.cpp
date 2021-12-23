@@ -5,7 +5,6 @@
 #include "../pointprocess/InterEventDistributions.h"
 #include "../pointprocess/optimizers/InverseGaussianOptimizer.h"
 #include "../pointprocess/WeightsProducer.h"
-#include "../pointprocess/serialize.h"
 
 // TODO: include it directly as a .csv...
 #include "../../tests/data/testData.h"

@@ -12,7 +12,7 @@ RegressionPipeline::RegressionPipeline(
 }
 
 
-[[nodiscard]] PointProcessResult RegressionPipeline::fullRegression(
+[[nodiscard]] pp::Result RegressionPipeline::fullRegression(
             const std::vector<double>& events_times,
             double windowLength = 60.0,
             double delta = 0.005,
@@ -25,7 +25,7 @@ RegressionPipeline::RegressionPipeline(
         double t0 = events_times[0];
         std::transform(events_times.begin(), events_times.end(), events.begin(),[&](auto& value){ return value - t0;});
 
-        auto pipelineSetup = getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
+        auto pipelineSetup = pp::utils::getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
                                               maxIter, weightsProducer);
 
         auto factory = OptimizersFactory();
@@ -39,7 +39,7 @@ RegressionPipeline::RegressionPipeline(
         lambdas.reserve(results.size());
         std::transform(results.begin(), results.end(), std::back_inserter(lambdas),
                        [](auto& res) { return res->lambda; });
-        computeTaus(taus, lambdas, pipelineSetup);
-        auto stats = computeStats(taus);
-        return PointProcessResult(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
+        pp::utils::computeTaus(taus, lambdas, pipelineSetup);
+        auto stats = pp::utils::computeStats(taus);
+        return {results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats};
     }
