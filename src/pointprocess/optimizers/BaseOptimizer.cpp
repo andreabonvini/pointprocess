@@ -51,7 +51,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
             negloglikel = negloglikel + negloglikelRc;
         }
 
-        if (isinf(negloglikelRc)){
+        if (std::isinf(negloglikelRc)){
             if (!cdfIsOne){ // TODO: put a break? Log this information somewhere...
                 // FIXME: this shouldn't happen
                 // Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data...
