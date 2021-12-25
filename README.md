@@ -1,7 +1,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pointprocess/badge/?version=latest)](https://pointprocess.readthedocs.io/en/latest/?badge=latest)
-[![codecov.io](https://codecov.io/github/andreabonvini/pointprocess/coverage.svg?branch=master)](https://codecov.io/github/andreabonvini/pointprocess?branch=master)
+[![GitHub Super-Linter](https://github.com/andreabonvini/pointprocess/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 ![Build Status](https://img.shields.io/github/workflow/status/andreabonvini/pointprocess/CI?event=push&label=Build&logo=Github-Actions)
-
+[![codecov.io](https://codecov.io/github/andreabonvini/pointprocess/coverage.svg?branch=master)](https://codecov.io/github/andreabonvini/pointprocess?branch=master)
 
 ![ppbig](docs/images/ppbig.png)
 
