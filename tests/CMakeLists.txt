@@ -26,5 +26,5 @@ add_executable(
         ../src/pointprocess/PointProcessUtils.h
 )
 
-target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
 gtest_discover_tests(RunTests)
