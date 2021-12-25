@@ -15,8 +15,9 @@ FetchContent_MakeAvailable(googletest)
 
 find_package (Eigen3 3.3 REQUIRED)
 find_package(Boost REQUIRED)
+find_package(GTest REQUIRED)
 
-
+include(GoogleTest)
 # We define a single executable (RunTests.cpp) that will run all the available tests.
 add_executable(
         RunTests RunTests.cpp
@@ -27,3 +28,4 @@ add_executable(
 )
 
 target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+gtest_discover_tests(RunTests)
