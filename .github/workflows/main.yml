@@ -15,7 +15,11 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  # This workflow contains two jobs that consists of three steps:
+  # 1) Installing the dependencies.
+  # 2) Building the library.
+  # 3) Running the tests.
+  # These steps are repeated for both an Ubuntu and a MacOS virtual machine.
     build-Ubuntu:
       # The type of runner that the job will run on
       runs-on: ubuntu-latest
