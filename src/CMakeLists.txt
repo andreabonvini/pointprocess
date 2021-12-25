@@ -101,6 +101,6 @@ target_link_libraries(fullRegression Boost::boost)
 
 # set(Eigen3_DIR "C:/Eigen3/build")   # On Windows...
 find_package (Eigen3 3.3 REQUIRED)
-target_link_libraries (pointprocess Eigen3::Eigen)
-target_link_libraries(singleRegression Eigen3::Eigen)
-target_link_libraries(fullRegression Eigen3::Eigen)
+target_link_libraries (pointprocess --coverage Eigen3::Eigen)
+target_link_libraries(singleRegression --coverage Eigen3::Eigen)
+target_link_libraries(fullRegression --coverage Eigen3::Eigen)

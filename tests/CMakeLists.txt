@@ -16,7 +16,7 @@ FetchContent_MakeAvailable(googletest)
 find_package (Eigen3 3.3 REQUIRED)
 find_package(Boost REQUIRED)
 
-
+include(GoogleTest)
 # We define a single executable (RunTests.cpp) that will run all the available tests.
 add_executable(
         RunTests RunTests.cpp
@@ -26,4 +26,5 @@ add_executable(
         ../src/pointprocess/PointProcessUtils.h
 )
 
-target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
+gtest_discover_tests(RunTests)
