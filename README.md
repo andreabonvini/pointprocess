@@ -1,5 +1,5 @@
 [![Documentation Status](https://readthedocs.org/projects/pointprocess/badge/?version=latest)](https://pointprocess.readthedocs.io/en/latest/?badge=latest)
-[![codecov.io](https://codecov.io/github/andreabonvini/pointprocess/coverage.svg?branch=master)](https://codecov.io/github/andreabonvini/pointprocess?branch=master)
+[![codecov.io](https://codecov.io/github/nikkaramessinis/pointprocess/coverage.svg?branch=master)](https://codecov.io/github/nikkaramessinis/pointprocess?branch=master)
 ![Build Status](https://img.shields.io/github/workflow/status/andreabonvini/pointprocess/CI?event=push&label=Build&logo=Github-Actions)
 
 
