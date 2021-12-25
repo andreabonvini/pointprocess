@@ -16,7 +16,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-    build:
+    build-Ubuntu:
       # The type of runner that the job will run on
       runs-on: ubuntu-latest
 
@@ -51,3 +51,29 @@ jobs:
         - run: lcov --list coverage.info
         - run: >-
             bash <(curl -s https://codecov.io/bash) -f coverage.info || echo
+    build-MacOS:
+      # The type of runner that the job will run on
+      runs-on: macos-latest
+
+      # Steps represent a sequence of tasks that will be executed as part of the job
+      steps:
+        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+        - uses: actions/checkout@v2
+        - name: Install Homebrew
+          run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        - name: Install Boost
+          run: brew install boost
+        - name: Install Eigen
+          run: brew install eigen
+        # Runs a single command using the runners shell
+        - name: Build
+          shell: bash
+          run: |
+            mkdir -p build && cd build
+            cmake ..
+            make
+        # Runs a set of commands using the runners shell
+        - name: Run Tests
+          run: |
+            cd build/tests/
+            ./RunTests
