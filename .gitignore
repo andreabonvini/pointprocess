@@ -1,5 +1,6 @@
 # Project exclude paths
 build/*
+docs/build/*
 cmake-build-debug/*
 DATA/*
 .DS_Store
