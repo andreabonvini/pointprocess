@@ -11,6 +11,7 @@
 #include "TestPointProcessDataset.h"
 #include "TestOptimizers.h"
 #include "TestPipeline.h"
+#include "TestDatasetBuffer.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

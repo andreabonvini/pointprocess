@@ -20,7 +20,7 @@ endif()
 # Each of these directories have a specific CMakeLists.txt file containing a set of directives and instructions
 #  describing the project's source files and targets (executable, library, or both).
 add_subdirectory(src)
-enable_testing()
 add_subdirectory(tests)
+
 
 

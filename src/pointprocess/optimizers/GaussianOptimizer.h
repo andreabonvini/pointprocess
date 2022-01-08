@@ -20,7 +20,7 @@ public:
         // Theta = x.segment(1,x.size() - 1)
         startingPoint[0] = 0.03; // sigma0
         startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
-    };
+    }
 
     void updateGradient(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradient) override{
 
@@ -31,7 +31,7 @@ public:
         - dataset.eta.dot((- 1.0 / x[0] + 0.5 * (dataset.wn - dataset.xn * x.segment(1,x.size() - 1)).array().pow(2.0)/pow(x[0],2.0)).matrix()),
         - dataset.xn.transpose() * (dataset.eta.array() * ( 1.0 / x[0] * (dataset.wn.array() - (dataset.xn * x.segment(1,x.size() - 1)).array()))).matrix();
 
-    };
+    }
 
     void updateGradientRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradientRc) override{
         // Sigma = x[0]
@@ -52,7 +52,7 @@ public:
                 - 1.0 / x[0] * pdf(norm,(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0])
         )
         * dataset.xt;
-    };
+    }
 
     void updateHessian(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessian) override{
         // Sigma = x[0]
@@ -72,14 +72,14 @@ public:
         *
         (dataset.eta.array() / x[0]).matrix().asDiagonal()
         * dataset.xn;
-    };
+    }
 
     double computePDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
         return exp(log( 1.0 / (x[0] * sqrt(2.0 * M_PI))) - 0.5 * (x[0] * pow((dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0], 2.0)) );
-    };
+    }
 
     double computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Sigma = x[0]
@@ -91,10 +91,10 @@ public:
         if (res == 1.0){
         }
         return std::min(res, 1.0 - 1e-15);
-    };
+    }
 
 
-    double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override{
+    double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // Mus = dataset.xn * x.segment(1,x.size() - 1)
@@ -110,7 +110,11 @@ public:
                     0.5 * (dataset.wn.array() - (dataset.xn * x.segment(1, x.size() - 1)).array()).pow(2.0) / x[0]
             ).matrix()));
         }
-    };
+    }
+    unsigned int getNumberOfAdditionalParams() override {
+        // sigma (std)
+        return 1;
+    }
 
 };
 

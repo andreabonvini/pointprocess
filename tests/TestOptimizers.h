@@ -24,7 +24,7 @@ namespace pointprocess::tests {
 
             std::vector<double> events = {};
             WeightsProducer wp = WeightsProducer(0.0);
-            pp::PipelineSetup set = pp::PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
+            pp::PipelineSetup set = pp::PipelineSetup(0.005,events,true,8,10,100,10,wp);
             std::unordered_map<PointProcessDistributions, std::shared_ptr<BaseOptimizer>> dist2opt = {
                     {PointProcessDistributions::Gaussian, std::make_shared<GaussianOptimizer>(GaussianOptimizer())},
                     {PointProcessDistributions::InverseGaussian, std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer())},
@@ -125,7 +125,6 @@ namespace pointprocess::tests {
         TEST_P(TestOptimizersFixture, TestHessians){
 
 
-
             Eigen::MatrixXd hessian(dataset.AR_ORDER + dataset.hasTheta0 + 1, dataset.AR_ORDER + dataset.hasTheta0 + 1);
             Eigen::MatrixXd approxHessian(dataset.AR_ORDER + dataset.hasTheta0 + 1, dataset.AR_ORDER + dataset.hasTheta0 + 1);
             Eigen::VectorXd xStart(dataset.AR_ORDER + dataset.hasTheta0 + 1);
@@ -136,7 +135,7 @@ namespace pointprocess::tests {
 
             std::vector<double> events = {};
             auto wp = WeightsProducer(0.0);
-            auto set = pp::PipelineSetup(0.005,events,true,true,8,10,100,10,10000,wp);
+            auto set = pp::PipelineSetup(0.005,events,true,8,10,100,10,wp);
 
             PointProcessDistributions dist = GetParam();
             auto dummyOpt = dist2opt[dist];
@@ -194,36 +193,5 @@ namespace pointprocess::tests {
 
     }
 }
-
-
-//bool testTrain(){
-//
-//
-//    std::vector<double> testEvents = {0.0,0.997,2.0,3.0,4.0,4.997,6.0};
-//    double windowLength = 5.0;
-//    double delta = 0.005;
-//    unsigned char AR_ORDER = 2;
-//    bool hasTheta0 = true;
-//    auto setup = getPipelineSetup(testEvents, false, hasTheta0, AR_ORDER, windowLength, delta, 1, WeightsProducer(1.00));
-//    /*
-//     * TODO: In this test I'm just testing the currentTime, it should be possible to add debugging
-//     *  information to the RegressionResults e.g. by adding the current observed_events and dataset used in each
-//     *  precise time bin.
-//     * Since we will use a windowLength of 5.0 seconds,
-//     * In the first window we expect:
-//     *    currentTime     : 5.0
-//     *    observed_events : 0.0, 0.997, 2.0, 3.0, 4.0, 4.997
-//     *    dataset.wt      : 5.0 - 4.997  = 0.003
-//     * In the last window we expect:
-//     *    currentTime     : 6.0
-//     *    observed_events : 2.0, 3.0, 4.0, 4.997, 6.0
-//     *    dataset.wt      : 6.0 - 6.0  = 0.0
-//     */
-//
-//    auto opt = InverseGaussianOptimizer();
-//    auto results = opt.train(setup);
-//    return (results[0]->time == 5.0 && results[results.size() - 1]->time == 6.0);
-//}
-
 
 #endif //POINTPROCESS_TESTOPTIMIZERS_H

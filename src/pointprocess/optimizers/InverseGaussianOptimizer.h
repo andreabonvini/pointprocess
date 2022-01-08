@@ -37,7 +37,7 @@ public:
         gradient <<
         0.5 * dataset.eta.dot((- 1.0 / x[0] +(dataset.wn - (dataset.xn * x.segment(1,x.size() - 1))).array().pow(2.0)/((dataset.xn * x.segment(1,x.size() - 1)).array().pow(2.0) * dataset.wn.array())).matrix()),  // derivative w.r.t. kappa
         dataset.xn.transpose() * ( - 1 * x[0] * dataset.eta.array() * ((dataset.wn.array() - (dataset.xn * x.segment(1,x.size() - 1)).array())/(dataset.xn * x.segment(1,x.size() - 1)).array().pow(3.0))).matrix() ;   // derivatives w.r.t. theta
-    };
+    }
 
     void updateGradientRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradientRc) override{
         // Kappa = x[0]
@@ -78,7 +78,7 @@ public:
         )
         * dataset.xt;
 
-    };
+    }
 
     void updateHessian(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessian) override{
         // Kappa = x[0]
@@ -97,14 +97,14 @@ public:
         dataset.xn.transpose() *
         (x[0] * dataset.eta.array() * ((3.0 * dataset.wn - 2.0 * (dataset.xn * x.segment(1,x.size() - 1))).array() / (dataset.xn * x.segment(1,x.size() - 1)).array().pow(4.0))).matrix().asDiagonal()
         * dataset.xn;
-    };
+    }
 
     double computePDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
         return exp(0.5 * log(x[0] / (2.0 * M_PI * pow(dataset.wt, 3.0))) - 0.5 * (x[0] * pow(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt), 2.0)) / (pow(x.segment(1,x.size() - 1).dot(dataset.xt), 2.0) * dataset.wt));
-    };
+    }
 
     double computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Kappa = x[0]
@@ -114,7 +114,7 @@ public:
         double arg1 = sqrt(x[0] / dataset.wt) * (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) - 1.0);
         double arg2 = - sqrt(x[0] / dataset.wt) * (dataset.wt / x.segment(1,x.size() - 1).dot(dataset.xt) + 1.0);
         return cdf(norm, arg1) + exp( 2.0 * x[0] / x.segment(1,x.size() - 1).dot(dataset.xt) + log(cdf(norm, arg2)));
-    };
+    }
 
     double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override{
         // Kappa = x[0]
@@ -132,9 +132,9 @@ public:
                        (2.0 * (dataset.xn * x.segment(1, x.size() - 1)).array().pow(2.0) *
                         dataset.wn.array()))).matrix()));
         }
-    };
+    }
 
-    std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) override{
+    std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) override{
 
         // Kappa = x[0]
         // Theta = x.segment(1,x.size() - 1)
@@ -142,9 +142,9 @@ public:
 
         // Check constraints
         assert (x[0] > 0.0);
-        // TODO: Uncomment
-        // assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
-        // assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
+        // TODO: Uncomment (or Comment)
+        assert ((dataset.xn * x.segment(1,x.size() - 1)).minCoeff() > 0.0 );
+        assert (x.segment(1,x.size() - 1).dot(dataset.xt) > 0.0);
 
         double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
         double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
@@ -158,10 +158,12 @@ public:
                 (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
                 meanInterval,
                 nIter,
-                computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0),
+                negloglikelihood,
                 maxGrad,
-                x[0]);
-    };
+                x[0],
+                converged,
+                cdfIsOne);
+    }
 
     double estimate_x0(const PointProcessDataset& dataset) override{
         // We can use the sample variance in order to have a coarse estimate for kappa (x0 for the InverseGaussian distribution)
@@ -171,6 +173,11 @@ public:
         // Variance = 1 / (n - 1) * sum([w - mu_hat for w in wn])
         // Kappa = mu_hat^3 / Variance
         return pow(mu_hat,3.0) / var;
+    }
+
+    unsigned int getNumberOfAdditionalParams() override {
+        // kappa (scale parameter)
+        return 1;
     }
 
 };

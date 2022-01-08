@@ -5,7 +5,6 @@
 #include "BaseOptimizer.h"
 
 
-
 BaseOptimizer::BaseOptimizer(PointProcessDistributions distribution){
     this->distribution = distribution;
 }
@@ -31,55 +30,76 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
     unsigned long gradientDescentIter = 0;
     bool NEWTON_WORKED;
     bool GRADIENT_DESCENT_WORKED;
+    bool NOTHING_WORKED;
     bool cdfIsOne = false;
 
     auto oldold = vars.xold;
+    bool rightCensoring_ = rightCensoring && dataset.wt > 1e-5;
 
-    while (maxGrad > gradTol && iter < maxIter){
+    while (iter < maxIter){
         vars.xold = x;
         // -------- compute gradient, hessian and negloglikelihood with the current parameters theta and kappa ---------
-        updateGradient(x, dataset, vars.gradient);
-        updateHessian(x, dataset, vars.hessian);
-        negloglikel = computeLikel(x,dataset);
 
-        if (rightCensoring && dataset.wt > 0.0){
+        // For efficiency reasons we first update the gradient and the negloglikelihood alone,
+        //  and see if there's any need for further optimization.
+        updateGradient(x, dataset, vars.gradient);
+        negloglikel = computeLikel(x,dataset);
+        if (rightCensoring_){
             updateGradientRc(x, dataset, vars.rcGradient);
-            updateHessianRc(x, dataset, vars.rcHessian);
             vars.gradient += vars.rcGradient;
-            vars.hessian += vars.rcHessian;
             negloglikelRc = computeLikelRc(x, dataset);
             negloglikel = negloglikel + negloglikelRc;
         }
+        maxGrad = vars.gradient.array().abs().maxCoeff();
 
         if (std::isinf(negloglikelRc)){
-            if (!cdfIsOne){ // TODO: put a break? Log this information somewhere...
-                // FIXME: this shouldn't happen
-                // Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data...
-                // Maybe you should use a distribution with a longer tail (e.g. LogNormal)
-                // std::cout << "Detected cdf == 1.0 during right censoring. Maybe you lost an event while annotating the data... " << std::endl;
-            }
+            // FIXME: If we enter this branch it may be cause of numerical problems (CDF becomes 1.0 since dataset.wt
+            //  is too high and the current distribution (defined by the parameters x) isn't long-tailed enough.
+       /*     std::cout << "\nSomething is wrong, the negative log-likelihood is INFINITY." << std::endl;
+            std::cout << "This is probably due to the right censoring term." << std::endl;
+            std::cout << "negloglikelRc: " << negloglikelRc << std::endl;
+            std::cout << "dataset.wt: " << dataset.wt << std::endl;
+            std::cout << "maxGrad: " << maxGrad << std::endl;*/
+            negloglikel = 0.0; // FIXME:  Completely arbitrary!
             cdfIsOne = true;
+            // FIXME: Are we sure this is what's happening?
+            //  In case, how should we behave? We could force the distribution to have a longer tail.
+            //  (or just ignore the problem as we're doing currently).
         }
-        else{
-            cdfIsOne = false;
+
+
+    if (maxGrad <= gradTol || cdfIsOne){
+            // There's no need to optimize further, the starting point x is already good enough.
+            // TODO: It would be useful to log something in case cdfIsOne is true
+            //  (maybe directly serialize it in the RegressionResult)
+            break;
+        }
+
+        // We can now compute the hessian matrix and proceed with the optimization procedure
+        updateHessian(x, dataset, vars.hessian);
+
+        if (rightCensoring_){
+            updateHessianRc(x, dataset, vars.rcHessian);
+            vars.hessian += vars.rcHessian;
         }
 
         // ---------- update parameters with Raphson-Newton method or gradient descent ---------------------------
         vars.eigenSolver.compute(vars.hessian);
         NEWTON_WORKED = false;
         GRADIENT_DESCENT_WORKED = false;
-        if (vars.eigenSolver.eigenvalues().real().minCoeff() > 0.0 && !cdfIsOne ){
+        NOTHING_WORKED = false;
+        if (vars.eigenSolver.eigenvalues().real().minCoeff() > 0.0){
             // Newton-Raphson with line-search
-            for (char i = 0; i < 10; i++){
+            for (char i = 0; i < 15; i++){
                 vars.alpha.setConstant(1.0 / pow(2.0, (double) i));
                 x = vars.xold - (vars.alpha.array() * (vars.hessian.inverse() * vars.gradient).array()).matrix();
                 // Compute new likelihood
                 tmpNegloglikel = computeLikel(x, dataset);
-                if (tmpNegloglikel != INFINITY && rightCensoring){
+                if (tmpNegloglikel != INFINITY && rightCensoring_){
                     tmpNegloglikelRc = computeLikelRc(x, dataset);
                     tmpNegloglikel += tmpNegloglikelRc;
                 }
-                else if (!rightCensoring){
+                else if (!(rightCensoring_)){
                     // Even if we don't apply rightCensoring we want to assure that the estimate for the current
                     // time bin is greater than 0.0
                     if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0) tmpNegloglikel = INFINITY;
@@ -95,17 +115,17 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
                 }
             }
         }
-        if (!NEWTON_WORKED && !cdfIsOne){
-            for (char i = 0; i < 10; i++) {
+        if (!NEWTON_WORKED){
+            for (char i = 0; i < 15; i++) {
                 vars.alpha.setConstant(0.0005 / pow(2.0, (double) i));
                 x = vars.xold - (vars.alpha.array() * vars.gradient.array()).matrix();
                 // Compute new likelihood
                 tmpNegloglikel = computeLikel(x, dataset);
-                if (tmpNegloglikel != INFINITY && rightCensoring) {
+                if (tmpNegloglikel != INFINITY && rightCensoring_) {
                     tmpNegloglikelRc = computeLikelRc(x, dataset);
                     tmpNegloglikel = tmpNegloglikel + tmpNegloglikelRc;
                 }
-                else if (!rightCensoring){
+                else if (!(rightCensoring_)){
                     // Even if we don't apply rightCensoring we want to assure that the estimate for the current
                     // time bin the sigma/kappa parameters are greater than 0.0
                     if (x.segment(1,x.size() - 1).dot(dataset.xt) < 0.0 || x[0] < 0.0) tmpNegloglikel = INFINITY;
@@ -125,23 +145,23 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
         if (NEWTON_WORKED){
             newtonIter++;
         }
-
         else if (GRADIENT_DESCENT_WORKED){
             gradientDescentIter++;
         }
         else{
             x = vars.xold;
+            /*std::cout << "\nBAD -> negloglikel:" << negloglikel << std::endl;
+            std::cout <<   "BAD ->     maxGrad:" << maxGrad << std::endl;*/
+            NOTHING_WORKED = true;
             break;
         }
         iter++;
-        oldNegloglikel = negloglikel;
-        maxGrad = vars.gradient.array().abs().maxCoeff();
     }
 
-    return packResult(x,dataset,rightCensoring, iter, maxGrad);
+    return packResult(x,dataset,negloglikel, rightCensoring, iter, maxGrad, maxGrad < gradTol, cdfIsOne);
 }
 
-std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad) {
+std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) {
 
     // Sigma = x[0]
     // Theta = x.segment(1,x.size() - 1)
@@ -156,6 +176,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::Vec
     double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
     double sigma = x[0];
 
+
     return std::make_shared<pp::RegressionResult>(
             dataset.hasTheta0 ? x[1] : 0.0,
             dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1),
@@ -164,8 +185,10 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::Vec
             (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
             meanInterval,
             nIter,
-            computeLikel(x, dataset) + (rightCensoring? computeLikelRc(x, dataset) : 0.0),
-            maxGrad);
+            negloglikelihood,
+            maxGrad,
+            converged,
+            cdfIsOne);
 };
 
 
@@ -250,45 +273,34 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProce
     );
 
 
-    return optimizeNewton(dataset, rightCensoring && dataset.wt > 0.0, maxIter, x, vars);
+    return optimizeNewton(dataset, rightCensoring, maxIter, x, vars);
 
 }
 
-std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(pp::PipelineSetup& setup) {
+std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter) {
 
-    unsigned long last_event_index = setup.last_event_index;
-    auto observed_events = std::deque<double>(setup.events.begin(), setup.events.begin() + (long) last_event_index + 1);
-
-    /* observed_events here is the subset of events observed during the first window, this std::deque will keep track
-     * of the events used for local regression at each time bin, discarding old events and adding new ones.
-     * It works as a buffer for our regression pipeline.
-     */
-
+    unsigned int numberOfParams = datasetBuffer.getNumberOfRegressionParameters() + getNumberOfAdditionalParams();
     // Initialize results vector and some useful variables
     std::vector<std::shared_ptr<pp::RegressionResult>> results;
-    results.reserve(setup.bins - setup.bins_in_window + 1);
-    double currentTime;
-    double windowLength = setup.delta * (double) (setup.bins_in_window);
-    bool resetParameters = true;
-    bool eventHappened;
-    unsigned int tmpIter;
-    assert (fabs(std::remainder(windowLength,setup.delta)) < 1e-10); // no better way to check if windowLength is a multiple of delta...
+    results.reserve(datasetBuffer.size());
 
-    auto startingPoint = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
+    unsigned int tmpIter;
+
+    auto startingPoint = Eigen::VectorXd(numberOfParams);
     populateStartingPoint(startingPoint);
 
-    auto x = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
+    auto x = Eigen::VectorXd(numberOfParams);
     x = startingPoint;
     // Note that x will be updated inside updateNewton() and will represent the optimal distribution
     // parameters at each time bin.
 
     // Declare some useful variables that will be used in the updateNewton() routine.
-    auto gradient = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-    auto hessian =  Eigen::MatrixXd(setup.AR_ORDER + setup.hasTheta0 + 1,setup.AR_ORDER + setup.hasTheta0 + 1);
-    auto rcGradient = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-    auto rcHessian = Eigen::MatrixXd(setup.AR_ORDER + setup.hasTheta0 + 1,setup.AR_ORDER + setup.hasTheta0 + 1);
-    auto xold = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
-    auto alpha = Eigen::VectorXd(setup.AR_ORDER + setup.hasTheta0 + 1);
+    auto gradient = Eigen::VectorXd(numberOfParams);
+    auto hessian =  Eigen::MatrixXd(numberOfParams,numberOfParams);
+    auto rcGradient = Eigen::VectorXd(numberOfParams);
+    auto rcHessian = Eigen::MatrixXd(numberOfParams,numberOfParams);
+    auto xold = Eigen::VectorXd(numberOfParams);
+    auto alpha = Eigen::VectorXd(numberOfParams);
     auto vars = pp::TmpVars(
             gradient,
             hessian,
@@ -298,36 +310,16 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(pp::Pipe
             alpha
     );
 
+    bool firstRegression = true;
+    unsigned long time_step = 1;
     // Main loop
-    for (unsigned long bin_index = setup.bins_in_window; bin_index <= setup.bins; bin_index ++){
-        // TODO: Add some kind of progress bar.
-        // TODO: Parallelize?.
-        if (bin_index % 10000 == 0){ // TODO: Remove.
-            std::cout << bin_index << " / " << setup.bins << "\n";
-        }
-        currentTime = (double) bin_index * setup.delta;
-        /* If the first element of observed_events happened before the
-         * time window between (current_time - window_length) and (current_time)
-         * we can discard it since it will not be part of the current optimization process.
-         */
-        if (!observed_events.empty() && observed_events[0] < currentTime - windowLength){
-            observed_events.pop_front();
-            // Force re-evaluation of starting point for theta and kappa.
-            resetParameters = true;
-        }
-        // We check whether an event happened in ((bin_index - 1) * delta, bin_index * delta]
-        eventHappened = setup.events[last_event_index + 1] <= currentTime;
-        if (eventHappened){
-            last_event_index++;
-            observed_events.push_back(setup.events[last_event_index]);
-            resetParameters = true;
-        }
-        // We create a PointProcessDataset for the current time bin
-        auto dataset = PointProcessDataset::load(observed_events,setup.AR_ORDER,setup.hasTheta0,setup.weightsProducer, currentTime);
+    for (auto [currentTime, eventHappened, resetParameters, dataset] : datasetBuffer){
+        pp::utils::logging::printProgress(currentTime, (double) time_step/ (double) datasetBuffer.size());
+        time_step++;
         if (resetParameters){
 
             // The uncensored solution is a good starting point.
-            if (setup.AR_ORDER == 0 && setup.hasTheta0){
+            if (dataset.AR_ORDER==0 && dataset.hasTheta0){
                 // If we are directly estimating the mu parameter, we can trivially set as a starting point the
                 // mean inter-event interval
                 x[1] = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
@@ -344,22 +336,23 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(pp::Pipe
                 x[0] = tmp_x0;
             }
 
-            std::shared_ptr<pp::RegressionResult> tmpRes = optimizeNewton(dataset, false,( (bin_index == setup.bins_in_window) ? 50000 : setup.maxIter), x, vars);
+            std::shared_ptr<pp::RegressionResult> tmpRes = optimizeNewton(dataset, false,( firstRegression ? 50000 : maxIter), x, vars);
             tmpIter = tmpRes -> nIter;
             resetParameters = false;
+            firstRegression = false;
+
         }
 
         // Compute the actual parameters by applying right-censoring (if specified)
-        std::shared_ptr<pp::RegressionResult> result = optimizeNewton(dataset, setup.rightCensoring && dataset.wt > 0.0, setup.maxIter, x, vars);
+        std::shared_ptr<pp::RegressionResult> result = optimizeNewton(dataset, rightCensoring, maxIter, x, vars);
 
         // Append metadata to result
-        result->time = currentTime;
+        result->time = currentTime; // TODO: Not really good practice, should be in the constructor.
         result->eventHappened = eventHappened;
-        if(eventHappened){
+        if(resetParameters){
             result->nIter += tmpIter;
         }
         results.push_back(result);
     }
-
     return results;
 }

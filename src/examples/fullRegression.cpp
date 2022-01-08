@@ -23,7 +23,7 @@ int main() {
             0.005, // delta
             true,  // rightCensoring
             1000,  // maxIter
-            WeightsProducer(0.05)
+            WeightsProducer(0.02)
             );
     pp::utils::serialize::ppResData2csv(ppRes, std::string("myData.csv"));
     pp::utils::serialize::ppResTaus2csv(ppRes, std::string("myTaus.csv"));

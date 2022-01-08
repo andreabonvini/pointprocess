@@ -20,18 +20,18 @@ RegressionPipeline::RegressionPipeline(
             unsigned int maxIter = 1000,
             WeightsProducer weightsProducer = WeightsProducer()
       ) const{
+
         // We want the first event to be at time 0 (events = events_times - events_times[0])
         std::vector<double> events = events_times;
         double t0 = events_times[0];
         std::transform(events_times.begin(), events_times.end(), events.begin(),[&](auto& value){ return value - t0;});
 
-        auto pipelineSetup = pp::utils::getPipelineSetup(events, rightCensoring, hasTheta0, AR_ORDER, windowLength, delta,
-                                              maxIter, weightsProducer);
+        auto pipelineSetup = pp::utils::getPipelineSetup(events, hasTheta0, AR_ORDER, windowLength, delta, weightsProducer);
+        auto datasetBuffer = DatasetBuffer(pipelineSetup);
 
         auto factory = OptimizersFactory();
         auto optimizer = factory.create(distribution);
-        auto results = optimizer->train(pipelineSetup);
-
+        auto results = optimizer->train(datasetBuffer, rightCensoring, maxIter);
 
         std::vector<double> taus;
         // Creating a new vector containing just the instantaneous lambda values to compute the taus.
@@ -39,6 +39,7 @@ RegressionPipeline::RegressionPipeline(
         lambdas.reserve(results.size());
         std::transform(results.begin(), results.end(), std::back_inserter(lambdas),
                        [](auto& res) { return res->lambda; });
+
         pp::utils::computeTaus(taus, lambdas, pipelineSetup);
         auto stats = pp::utils::computeStats(taus);
         return pp::Result(results, taus, this->distribution, this->AR_ORDER, this-> hasTheta0, windowLength, delta, t0, stats);
