@@ -90,7 +90,9 @@ jobs:
         - name: Install Boost
           run: choco install boost-msvc-14.2
         - name: Install Eigen
-          run: choco install eigen --version=3.3.4
+          run: |
+            Invoke-WebRequest -Uri https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -OutFile ./eigen-3.4.0.zip
+            7z x .\eigen-3.4.0.zip
         - name: Build
           run: |
             mkdir -p build && cd build
