@@ -89,11 +89,11 @@ jobs:
         - uses: actions/checkout@v2
         - name: Install Boost
           run: |
-            curl https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z
+            Invoke-WebRequest -Uri https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.7z -OutFile ./boost_1_78_0.7z
             7z x .\boost_1_78_0.7z
         - name: Install Eigen
           run: |
-            curl https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip
+            Invoke-WebRequest -Uri https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -OutFile ./eigen-3.4.0.zip
             7z x .\eigen-3.4.0.zip
         - name: Build
           run: |
