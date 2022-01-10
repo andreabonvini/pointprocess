@@ -95,7 +95,7 @@ jobs:
             7z x .\eigen-3.4.0.zip
         - name: Build
           run: |
-            mkdir -p build
+            mkdir -p build && cd build
             cmake ..
             make
         - name: Run Tests
