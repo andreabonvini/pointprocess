@@ -102,6 +102,7 @@ jobs:
           run: |
             mkdir -p build && cd build
             cmake ..
+            cd ..
             make
         - name: Run Tests
           run: |
