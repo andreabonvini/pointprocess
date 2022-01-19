@@ -89,6 +89,8 @@ jobs:
 #        - uses: actions/checkout@v2
         - name: Install Boost
           run: choco install boost-msvc-14.2
+        - name: Install cmake
+          run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
         - name: Install Eigen
           run: |
             Invoke-WebRequest -Uri https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -OutFile ./eigen-3.4.0.zip
