@@ -86,7 +86,7 @@ jobs:
       runs-on: windows-latest
 
       steps:
-        - uses: actions/checkout@v2
+#        - uses: actions/checkout@v2
         - name: Install Boost
           run: choco install boost-msvc-14.2
         - name: Install Eigen
