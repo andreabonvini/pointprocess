@@ -100,7 +100,11 @@ jobs:
             cmake --build . --target install
         - name: Build
           run: |
+            pwd
+            ls
             mkdir -p build && cd build
+            pwd
+            ls
             cmake ..
             make
         - name: Run Tests
