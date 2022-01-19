@@ -22,6 +22,5 @@ add_executable(
 )
 
 target_link_libraries(RunBenchmarks  Eigen3::Eigen Boost::boost benchmark::benchmark)
-# gtest_discover_tests(RunTests)
 
 

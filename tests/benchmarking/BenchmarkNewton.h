@@ -106,16 +106,6 @@ static void BM_optimizeNewton(benchmark::State& state) {
     std::cout << "-------------------------------------------------------------------------" << std::endl;
     std::cout << "Mean number of iterations    |         " << meanNumberOfIterations << std::endl;
     std::cout << "=========================================================================" << std::endl;
- /*   std::vector<double> taus;
-    auto stats = pp::Stats(0.0,0.0,0.0);
-    auto ppres = pp::Result(
-        results,
-        taus,
-        PointProcessDistributions::InverseGaussian,
-        9,true,60.0,0.005,t0,stats);
-    pp::utils::serialize::ppResData2csv(
-            ppres,
-            "../benchmarkData.csv");*/
 }
 // Register the function as a benchmark
 BENCHMARK(BM_optimizeNewton)->Iterations(1);
