@@ -7,7 +7,7 @@ project(pointprocess)
 
 
 # Set C++ standard to use.
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)  # 20 Doesn't work on Windows
 
 if (CMAKE_COMPILER_IS_GNUCC)
   add_compile_options(--coverage -O0)

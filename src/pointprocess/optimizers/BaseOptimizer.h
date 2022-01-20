@@ -6,6 +6,7 @@
 #define POINTPROCESS_BASEOPTIMIZER_H
 
 
+
 #include <utility>
 #include <vector>
 #include <numeric>
@@ -21,6 +22,11 @@
 #include <Eigen/Eigenvalues>
 #include <deque>
 #include <utility>
+
+
+#ifndef M_PI  // For Visual Studio
+    #define M_PI 3.14159265358979323846
+#endif
 
 
 
