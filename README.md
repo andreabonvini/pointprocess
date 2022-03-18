@@ -4,6 +4,8 @@
 
 ![ppbig](docs/images/ppbig.png)
 
+ALERT: I'm working on building a Python package in order to ease the use of the software in an academic environment, write me in case you need a temporary working solution (email: a.bonvini96@gmail.com).
+
 This repository contains a `C++` implementation of the `MATLAB` software provided by Riccardo Barbieri and Luca
 Citi [here](http://users.neurostat.mit.edu/barbieri/pphrv).
 

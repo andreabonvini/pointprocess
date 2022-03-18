@@ -94,13 +94,36 @@ add_executable(fullRegression examples/fullRegression.cpp
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
 find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    message(STATUS "Boost found!")
+endif()
 target_link_libraries(pointprocess Boost::boost)
 target_link_libraries(singleRegression Boost::boost)
 target_link_libraries(fullRegression Boost::boost)
 
 
-# set(Eigen3_DIR "C:/Eigen3/build")   # On Windows...
 find_package (Eigen3 3.3 REQUIRED)
+if(Eigen3_FOUND)
+    message(STATUS "Eigen found!")
+endif()
+
+IF( NOT EIGEN3_INCLUDE_DIR )
+    MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
+ENDIF()
+INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
+
+if (CMAKE_COMPILER_IS_GNUCC)
 target_link_libraries (pointprocess --coverage Eigen3::Eigen)
 target_link_libraries(singleRegression --coverage Eigen3::Eigen)
 target_link_libraries(fullRegression --coverage Eigen3::Eigen)
+elseif (WIN32)
+    target_link_libraries (pointprocess)
+    target_link_libraries(singleRegression)
+    target_link_libraries(fullRegression)
+else()
+    target_link_libraries (pointprocess Eigen3::Eigen)
+    target_link_libraries(singleRegression Eigen3::Eigen)
+    target_link_libraries(fullRegression Eigen3::Eigen)
+
+endif()
+

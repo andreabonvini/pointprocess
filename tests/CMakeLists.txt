@@ -13,8 +13,24 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-find_package (Eigen3 3.3 REQUIRED)
+
+
 find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    message(STATUS "Boost found!")
+endif()
+
+find_package (Eigen3 3.3 REQUIRED)
+if(Eigen3_FOUND)
+    message(STATUS "Eigen found!")
+endif()
+
+IF( NOT EIGEN3_INCLUDE_DIR )
+    MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
+ENDIF()
+INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
+
+
 
 include(GoogleTest)
 enable_testing()
@@ -28,7 +44,12 @@ add_executable(
         ../src/pointprocess/PointProcessUtils.h
 )
 
-target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
+if (CMAKE_COMPILER_IS_GNUCC)
+    target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
+elseif (WIN32)
+    target_link_libraries(RunTests --coverage gtest gtest_main Boost::boost)
+else()
+    target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+endif()
+
 gtest_discover_tests(RunTests)
-
-
