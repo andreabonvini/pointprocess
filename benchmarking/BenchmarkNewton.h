@@ -5,9 +5,9 @@
 #ifndef POINTPROCESS_BENCHMARKNEWTON_H
 #define POINTPROCESS_BENCHMARKNEWTON_H
 #include "benchmark/benchmark.h"
-#include "../../src/pointprocess/OptimizersFactory.h"
-#include "../data/testData.h"
-#include "../../src/pointprocess/PointProcessUtils.h"
+#include "../src/pointprocess/OptimizersFactory.h"
+#include "../tests/data/testData.h"
+#include "../src/pointprocess/PointProcessUtils.h"
 
 
 static void BM_optimizeNewton(benchmark::State& state) {

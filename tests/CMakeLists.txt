@@ -31,4 +31,4 @@ add_executable(
 target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
 gtest_discover_tests(RunTests)
 
-add_subdirectory(benchmarking)
+

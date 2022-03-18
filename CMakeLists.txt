@@ -4,8 +4,6 @@ cmake_minimum_required(VERSION 3.19)
 # Define Project name.
 project(pointprocess)
 
-
-
 # Set C++ standard to use.
 set(CMAKE_CXX_STANDARD 20)
 
@@ -21,6 +19,10 @@ endif()
 #  describing the project's source files and targets (executable, library, or both).
 add_subdirectory(src)
 add_subdirectory(tests)
+
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  add_subdirectory(benchmarking)
+endif()
 
 
 

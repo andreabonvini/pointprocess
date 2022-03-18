@@ -15,10 +15,10 @@ find_package(Boost REQUIRED)
 # We define a single executable (RunBenchmarks.cpp) that will run all the available benchmarks.
 add_executable(
         RunBenchmarks RunBenchmarks.cpp
-        ../../src/pointprocess/optimizers/BaseOptimizer.cpp
-        ../../src/pointprocess/optimizers/BaseOptimizer.h
-        ../../src/pointprocess/PointProcessUtils.cpp
-        ../../src/pointprocess/PointProcessUtils.h
+        ../src/pointprocess/optimizers/BaseOptimizer.cpp
+        ../src/pointprocess/optimizers/BaseOptimizer.h
+        ../src/pointprocess/PointProcessUtils.cpp
+        ../src/pointprocess/PointProcessUtils.h
 )
 
 target_link_libraries(RunBenchmarks  Eigen3::Eigen Boost::boost benchmark::benchmark)

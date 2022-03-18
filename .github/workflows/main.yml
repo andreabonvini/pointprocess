@@ -44,9 +44,9 @@ jobs:
         # Runs a set of commands using the runners shell
         - name: Run Tests
           run: |
-            cd build/
-            ctest
-            
+            cd build/tests/
+            ctest -j $(nproc) --output-on-failure
+
         - run: lcov --directory . --capture --output-file coverage.info
         - run: >-
               lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*'
