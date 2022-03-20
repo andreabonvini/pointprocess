@@ -7,8 +7,11 @@ project(pointprocess)
 set(CMAKE_CXX_STANDARD 17)  # 20 Doesn't work on Windows
 
 if (CMAKE_COMPILER_IS_GNUCC)
-  add_compile_options(--coverage -lgcov)  # TODO: Ask Nick -> why there was -O0 too?
+  add_compile_options(-fprofile-arcs -ftest-coverage)  # TODO: Ask Nick -> why there was -O0 too?
+  add_link_options(--coverage -lgcov)
 endif()
+
+
 
 # The add_subdirectory(source_dir) command adds a subdirectory to the build.
 # The source_dir specifies the directory in which the source CMakeLists.txt and code files are located.
