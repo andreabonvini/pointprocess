@@ -80,7 +80,13 @@ public:
                             setup.weightsProducer,
                             (double) setup.bins_in_window * setup.delta)
             )
-    {}
+    {
+        std::cout << "events_      :" << std::endl;
+        for(auto& el: events_){
+            std::cout << el << std::endl;
+        }
+        std::cout << "events_.size():" << events_.size() << std::endl;
+    }
     [[nodiscard]] unsigned int getNumberOfRegressionParameters() const{
         return AR_ORDER_ + (unsigned int) hasTheta0_;
     }
@@ -133,6 +139,11 @@ private:
         }
         // We check whether an event happened in ((bin_index - 1) * delta, bin_index * delta]
         eventHappened_ = events_[last_event_index_ + 1] <= currentTime_;
+        std::cout << "------------------\n";
+        std::cout << "currentTime                                   : " << currentTime_ << std::endl;
+        std::cout << "last_event_index + 1                          : " << last_event_index_ + 1 << std::endl;
+        std::cout << "events_[last_event_index_ + 1]                : " << events_[last_event_index_ + 1] << std::endl;
+        std::cout << "events_[last_event_index_ + 1] <= currentTime_: " << (events_[last_event_index_ + 1] <= currentTime_) << std::endl;
         if (eventHappened_){
             last_event_index_++;
             observed_events_.push_back(events_[last_event_index_]);
