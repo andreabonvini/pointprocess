@@ -16,13 +16,9 @@ public:
     // ============================ Start Iterator definition ==================================
     struct Iterator
     {
-
-
-
         using valueType = std::tuple<double, bool, bool, PointProcessDataset>;
         using pointer  = valueType*;
         using reference = valueType&;
-
 
         Iterator(DatasetBuffer* ptr, unsigned long bin_index) : m_ptr(ptr) ,  bin_index(bin_index), values(
                 std::move(std::make_tuple(m_ptr->currentTime_ ,m_ptr->eventHappened_,m_ptr->resetParameters_, m_ptr->current_))) {}
@@ -37,12 +33,14 @@ public:
         // Prefix increment
         Iterator& operator++() {
             bin_index++;
+
             m_ptr->update(bin_index);
             std::get<0>(values) = m_ptr->currentTime_;
             std::get<1>(values) = m_ptr->eventHappened_;
             std::get<2>(values) = m_ptr->resetParameters_;
             // FIXME: is this a copy?
             std::get<3>(values) = m_ptr->current_;
+
             return *this;
         }
 
@@ -79,13 +77,7 @@ public:
                             setup.hasTheta0,
                             setup.weightsProducer,
                             (double) setup.bins_in_window * setup.delta)
-            )
-    {
-        std::cout << "events_      :" << std::endl;
-        for(auto& el: events_){
-            std::cout << el << std::endl;
-        }
-        std::cout << "events_.size():" << events_.size() << std::endl;
+            ) {
     }
     [[nodiscard]] unsigned int getNumberOfRegressionParameters() const{
         return AR_ORDER_ + (unsigned int) hasTheta0_;
@@ -120,38 +112,37 @@ private:
     PointProcessDataset current_;
 
     void update(unsigned long bin_index){
-        currentTime_ = (double) bin_index * delta_;
+        if (bin_index <= last_bin_index_) {
+            currentTime_ = (double) bin_index * delta_;
 
-        // If in the previous time step we reset our distribution parameters (since the observed events changed), we
-        // can set this flag to false.
-        if (resetParameters_){
-            resetParameters_ = false;
-        }
+            // If in the previous time step we reset our distribution parameters (since the observed events changed), we
+            // can set this flag to false.
+            if (resetParameters_) {
+                resetParameters_ = false;
+            }
 
-        /* If the first element of observed_events happened before the
-         * time window between (current_time - window_length) and (current_time)
-         * we can discard it since it will not be part of the current optimization process.
-         */
-        if (!observed_events_.empty() && observed_events_[0] < currentTime_ - windowLength_){
-            observed_events_.pop_front();
-            // Force re-evaluation of starting point for theta and kappa.
-            resetParameters_ = true;
-        }
-        // We check whether an event happened in ((bin_index - 1) * delta, bin_index * delta]
-        eventHappened_ = events_[last_event_index_ + 1] <= currentTime_;
-        std::cout << "------------------\n";
-        std::cout << "currentTime                                   : " << currentTime_ << std::endl;
-        std::cout << "last_event_index + 1                          : " << last_event_index_ + 1 << std::endl;
-        std::cout << "events_[last_event_index_ + 1]                : " << events_[last_event_index_ + 1] << std::endl;
-        std::cout << "events_[last_event_index_ + 1] <= currentTime_: " << (events_[last_event_index_ + 1] <= currentTime_) << std::endl;
-        if (eventHappened_){
-            last_event_index_++;
-            observed_events_.push_back(events_[last_event_index_]);
-            resetParameters_ = true;
-        }
-        // We create a PointProcessDataset for the current time bin
-        current_ = PointProcessDataset::load(observed_events_, AR_ORDER_, hasTheta0_, weightsProducer_, currentTime_);
+            /* If the first element of observed_events happened before the
+             * time window between (current_time - window_length) and (current_time)
+             * we can discard it since it will not be part of the current optimization process.
+             */
+            if (!observed_events_.empty() && observed_events_[0] < currentTime_ - windowLength_) {
+                observed_events_.pop_front();
+                // Force re-evaluation of starting point for theta and kappa.
+                resetParameters_ = true;
+            }
+            // We check whether an event happened in ((bin_index - 1) * delta, bin_index * delta]
+            eventHappened_ = events_[last_event_index_ + 1] <= currentTime_;
 
+            if (eventHappened_) {
+                last_event_index_++;
+                observed_events_.push_back(events_[last_event_index_]);
+                resetParameters_ = true;
+            }
+
+            // We create a PointProcessDataset for the current time bin
+            current_ = PointProcessDataset::load(observed_events_, AR_ORDER_, hasTheta0_, weightsProducer_,
+                                                 currentTime_);
+        }
     }
 };
 

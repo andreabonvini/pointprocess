@@ -64,16 +64,9 @@ namespace pointprocess::tests {
             EXPECT_EQ(dataBuffer.size(), expectedSize);
 
             std::vector<double> wts;
-            wts.reserve(dataBuffer.size());
-
             std::vector<double> cts;
-            cts.reserve(dataBuffer.size());
-
             std::vector<bool> ehs;
-            ehs.reserve(dataBuffer.size());
-
             std::vector<bool> rps;
-            rps.reserve(dataBuffer.size());
 
             // FIXME: dataset here is a copy?
             for(auto [currentTime, eventHappened, resetParameters, dataset]: dataBuffer){
@@ -82,6 +75,7 @@ namespace pointprocess::tests {
                 rps.push_back(resetParameters);
                 wts.push_back(dataset.wt);
             }
+
             for (int i = 0; i < dataBuffer.size(); ++i) {
                 EXPECT_FLOAT_EQ(expectedCts[i], cts[i]) << "Vectors expectedCts and cts differ at index " << i;
             }
