@@ -14,7 +14,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 
-
 find_package(Boost REQUIRED)
 if(Boost_FOUND)
     message(STATUS "Boost found!")
@@ -30,8 +29,6 @@ IF( NOT EIGEN3_INCLUDE_DIR )
 ENDIF()
 INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
 
-
-
 include(GoogleTest)
 enable_testing()
 
@@ -44,12 +41,6 @@ add_executable(
         ../src/pointprocess/PointProcessUtils.h
 )
 
-if (CMAKE_COMPILER_IS_GNUCC)
-    target_link_libraries(RunTests --coverage gtest gtest_main Eigen3::Eigen Boost::boost)
-elseif (WIN32)
-    target_link_libraries(RunTests --coverage gtest gtest_main Boost::boost)
-else()
-    target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
-endif()
+target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
 
 gtest_discover_tests(RunTests)

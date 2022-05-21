@@ -8,3 +8,9 @@ In order to see the results of your changes in the `source/` folder locally, jus
 ```
 make html
 ```
+
+## Run test coverage
+### On MacOs and Linux
+```
+lcov --directory . --capture --output-file coverage.info
+```

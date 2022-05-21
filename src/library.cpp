@@ -2,7 +2,6 @@
 // Created by Andrea Bonvini on 18/05/21.
 //
 
-#include "pointprocess/OptimizersFactory.h"
 #include "pointprocess/PointProcessUtils.h"
 #include "pointprocess/RegressionPipeline.h"
 
