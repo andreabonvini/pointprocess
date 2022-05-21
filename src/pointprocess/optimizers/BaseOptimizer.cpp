@@ -9,7 +9,7 @@ BaseOptimizer::BaseOptimizer(PointProcessDistributions distribution){
     this->distribution = distribution;
 }
 
-
+// LCOV_EXCL_START
 std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
         const PointProcessDataset& dataset,
         bool rightCensoring,
@@ -160,6 +160,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
 
     return packResult(x,dataset,negloglikel, rightCensoring, iter, maxGrad, maxGrad < gradTol, cdfIsOne);
 }
+// LCOV_EXCL_STOP
 
 std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) {
 

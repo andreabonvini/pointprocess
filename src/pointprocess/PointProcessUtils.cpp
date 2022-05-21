@@ -99,6 +99,7 @@ void pp::utils::computeTaus(std::vector<double> &taus, const std::vector<double>
 
 
 
+// LCOV_EXCL_START
 void pp::utils::serialize::ppResData2csv(Result &ppRes, const std::string &outputResultsName) {
     // The main Regression Results will be saved at outputResultsName
     std::ofstream csv(outputResultsName.c_str());
@@ -139,8 +140,9 @@ void pp::utils::serialize::ppResData2csv(Result &ppRes, const std::string &outpu
 
     csv.close();
 }
+// LCOV_EXCL_STOP
 
-
+// LCOV_EXCL_START
 void pp::utils::serialize::ppResTaus2csv(Result &ppRes, const std::string &outputTausName) {
     std::ofstream taus(outputTausName.c_str());
     taus << "Taus\n";
@@ -149,8 +151,9 @@ void pp::utils::serialize::ppResTaus2csv(Result &ppRes, const std::string &outpu
     }
     taus.close();
 }
+// LCOV_EXCL_STOP
 
-
+// LCOV_EXCL_START
 void pp::utils::logging::printProgress(double currentTime, double percentage) {
     int val = (int) (percentage * 100);
     int lpad = (int) (percentage * PBWIDTH);
@@ -158,3 +161,4 @@ void pp::utils::logging::printProgress(double currentTime, double percentage) {
     printf("\r%3d%% [%.*s%*s] (Current time: %f s)", val, lpad, PBSTR, rpad, "", currentTime);
     fflush(stdout);
 }
+// LCOV_EXCL_STOP
