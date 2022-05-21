@@ -40,7 +40,10 @@ add_executable(
         ../src/pointprocess/PointProcessUtils.cpp
         ../src/pointprocess/PointProcessUtils.h
 )
-
-target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+if (WIN32)
+    target_link_libraries(RunTests gtest gtest_main Boost::boost)
+else()
+    target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+endif()
 
 gtest_discover_tests(RunTests)
