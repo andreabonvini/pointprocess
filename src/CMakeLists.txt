@@ -19,8 +19,6 @@ include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-march=native" _march_native_works)
 check_cxx_compiler_flag("-xHost" _xhost_works)
 
-set(_CXX_FLAGS)
-
 if(_march_native_works)
     message(STATUS "Using processor's vector instructions (-march=native compiler flag set)")
     set(_CXX_FLAGS "-march=native")
@@ -112,11 +110,7 @@ IF( NOT EIGEN3_INCLUDE_DIR )
 ENDIF()
 INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
 
-if (CMAKE_COMPILER_IS_GNUCC)
-target_link_libraries (pointprocess --coverage Eigen3::Eigen)
-target_link_libraries(singleRegression --coverage Eigen3::Eigen)
-target_link_libraries(fullRegression --coverage Eigen3::Eigen)
-elseif (WIN32)
+if (WIN32)
     target_link_libraries (pointprocess)
     target_link_libraries(singleRegression)
     target_link_libraries(fullRegression)
@@ -124,6 +118,5 @@ else()
     target_link_libraries (pointprocess Eigen3::Eigen)
     target_link_libraries(singleRegression Eigen3::Eigen)
     target_link_libraries(fullRegression Eigen3::Eigen)
-
 endif()
 

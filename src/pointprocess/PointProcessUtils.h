@@ -14,6 +14,9 @@
 #include "WeightsProducer.h"
 #include "InterEventDistributions.h"
 
+#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+#define PBWIDTH 60
+
 
 namespace pp {
 
@@ -31,59 +34,52 @@ namespace pp {
         Eigen::MatrixXd hessian;
         Eigen::VectorXd rcGradient;
         Eigen::MatrixXd rcHessian;
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver;
         Eigen::VectorXd xold;
         Eigen::VectorXd alpha;
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver;
 
         TmpVars(
-                Eigen::VectorXd &gradient,
-                Eigen::MatrixXd &hessian,
-                Eigen::VectorXd &rcGradient,
-                Eigen::MatrixXd &rcHessian,
-                Eigen::VectorXd &xold,
-                Eigen::VectorXd &alpha) {
-            this->gradient = gradient;
-            this->hessian = hessian;
-            this->rcGradient = rcGradient;
-            this->rcHessian = rcHessian;
-            this->xold = xold;
-            this->alpha = alpha;
-        }
+                Eigen::VectorXd gradient,
+                Eigen::MatrixXd hessian,
+                Eigen::VectorXd rcGradient,
+                Eigen::MatrixXd rcHessian,
+                Eigen::VectorXd xold,
+                Eigen::VectorXd alpha
+                ) :
+                gradient(std::move(gradient)),
+                hessian(std::move(hessian)),
+                rcGradient(std::move(rcGradient)),
+                rcHessian(std::move(rcHessian)),
+                xold(std::move(xold)),
+                alpha(std::move(alpha)){}
     };
 
     struct PipelineSetup {
         double delta;
         std::vector<double> events;
-        bool rightCensoring;
         bool hasTheta0;
         unsigned char AR_ORDER;
         unsigned long last_event_index;
         unsigned long bins;
         unsigned long bins_in_window;
-        unsigned int maxIter;
         WeightsProducer weightsProducer;
-
         PipelineSetup(
                 double delta,
                 std::vector<double> events,
-                bool rc,
                 bool hasTheta0,
                 unsigned char AR_ORDER,
                 unsigned long last_event_index,
                 unsigned long b,
                 unsigned long biw,
-                unsigned long maxIter,
                 WeightsProducer weightsProducer
         ) :
                 delta(delta),
                 events(std::move(events)),
-                rightCensoring(rc),
                 hasTheta0(hasTheta0),
                 AR_ORDER(AR_ORDER),
                 last_event_index(last_event_index),
                 bins(b),
                 bins_in_window(biw),
-                maxIter(maxIter),
                 weightsProducer(weightsProducer) {}
     };
 
@@ -97,8 +93,10 @@ namespace pp {
         double time = 0.0;
         unsigned long nIter;
         double likelihood;
-        bool eventHappened = false;
+        bool eventHappened;
         double maxGrad;
+        bool converged;
+        bool cdfIsOne;
 
         RegressionResult(
                 double theta0,
@@ -109,7 +107,9 @@ namespace pp {
                 double meanInterval,
                 long nIter,
                 double likelihood,
-                double maxGrad
+                double maxGrad,
+                bool converged,
+                bool cdfIsOne
         ) :
                 theta0(theta0),
                 thetaP(std::move(thetaP)),
@@ -119,7 +119,9 @@ namespace pp {
                 meanInterval(meanInterval),
                 nIter(nIter),
                 likelihood(likelihood),
-                maxGrad(maxGrad) {}
+                maxGrad(maxGrad),
+                converged(converged),
+                cdfIsOne(cdfIsOne){}
 
         // I declare a virtual destructor just to have run-time type information (RTTI), which is needed
         // to guarantee polymorphic behaviour.
@@ -138,10 +140,12 @@ namespace pp {
                            long nIter,
                            double likelihood,
                            double maxGrad,
-                           double kappa)
+                           double kappa,
+                           bool converged,
+                           bool cdfIsOne)
                 :
                 kappa(kappa),
-                RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad) {}
+                RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad, converged,cdfIsOne) {}
     };
 
     struct Result { // TODO: add Documentation
@@ -200,8 +204,8 @@ namespace pp {
          * bins_in_window:
          *     number of bins in a single time window.
          */
-        PipelineSetup getPipelineSetup(const std::vector<double> &events, bool rc, bool hasTheta0_, unsigned char AR_ORDER_,
-                         double windowLength, double delta, unsigned long maxIter, WeightsProducer weightsProducer);
+        PipelineSetup getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,
+                         double windowLength, double delta, WeightsProducer weightsProducer);
 
         // TODO: add documentation
         void computeTaus(std::vector<double> &taus, const std::vector<double> &lambdas, const PipelineSetup &setup);
@@ -211,6 +215,11 @@ namespace pp {
             void ppResData2csv(Result &ppRes, const std::string &outputResultsName);
 
             void ppResTaus2csv(Result &ppRes, const std::string &outputTausName);
+        }
+
+        namespace logging {
+
+            void printProgress(double currentTime, double percentage);
         }
     }
 }

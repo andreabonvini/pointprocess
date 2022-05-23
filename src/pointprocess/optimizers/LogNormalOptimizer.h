@@ -13,14 +13,14 @@
 
 class LogNormalOptimizer : public BaseOptimizer{
 public:
-    explicit LogNormalOptimizer(): BaseOptimizer(PointProcessDistributions::LogNormal){};
+    explicit LogNormalOptimizer(): BaseOptimizer(PointProcessDistributions::LogNormal){}
 
     void populateStartingPoint(Eigen::VectorXd& startingPoint) override{
         // Sigma = x[0]
         // Theta = x.segment(1,x.size() - 1)
          startingPoint[0] = 0.02; // sigma0
          startingPoint.segment(1,startingPoint.size() - 1).setConstant(1.0 / double (startingPoint.size()));
-    };
+    }
 
     void updateGradient(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradient) override{
         // Sigma = x[0]
@@ -29,7 +29,7 @@ public:
         gradient <<
         - dataset.eta.dot((- 1.0 / x[0] + (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()).pow(2.0) / pow(x[0],3.0) ).matrix()),
         dataset.xn.transpose() * (- dataset.eta.array() * 1.0 / (pow(x[0], 2.0) * (dataset.xn * x.segment(1,x.size() - 1)).array()) * (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()) ).matrix();
-    };
+    }
 
     void updateGradientRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::VectorXd& gradientRc) override{
         // Sigma = x[0]
@@ -47,7 +47,7 @@ public:
                        pdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) / x[0] ) * 1.0 / (x[0] * x.segment(1,x.size() - 1).dot(dataset.xt))
                )
                * dataset.xt;
-    };
+    }
 
     void updateHessian(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessian) override{
         // Sigma = x[0]
@@ -76,7 +76,7 @@ public:
                 dataset.eta.array() * (1.0 + dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()) / (pow(x[0],2.0) * (dataset.xn * x.segment(1,x.size() - 1)).array().pow(2.0) )
         ).matrix().asDiagonal()
         * dataset.xn;
-    };
+    }
 
     double computePDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Sigma = x[0]
@@ -87,7 +87,7 @@ public:
                 -
                 pow((log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))), 2.0) / (2.0 * pow(x[0],2.0))
                 )  ;
-    };
+    }
 
     double computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override {
         // Sigma = x[0]
@@ -95,7 +95,7 @@ public:
         // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
         boost::math::normal norm;
         return cdf(norm, (log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))) /  x[0] );
-    };
+    }
 
     double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override{
         // Sigma = x[0]
@@ -109,7 +109,12 @@ public:
         else{
             return - dataset.eta.dot( ((1.0 / (dataset.wn.array() * x[0] * sqrt(2.0 * M_PI))).log() - 0.5 * (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()).pow(2.0) / pow(x[0],2.0)).matrix() );
         }
-    };
+    }
+
+    unsigned int getNumberOfAdditionalParams() override {
+        // sigma (std of natural logarithm)
+        return 1;
+    }
 };
 
 

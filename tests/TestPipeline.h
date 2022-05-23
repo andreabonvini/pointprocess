@@ -21,7 +21,7 @@ namespace pointprocess::tests {
             double delta = 0.005;
             unsigned char AR_ORDER = 2;
             bool hasTheta0 = true;
-            auto setup = pp::utils::getPipelineSetup(testEvents, false, hasTheta0, AR_ORDER, windowLength, delta, 1, WeightsProducer(1.00));
+            auto setup = pp::utils::getPipelineSetup(testEvents, hasTheta0, AR_ORDER, windowLength, delta, WeightsProducer(1.00));
 
             EXPECT_EQ(setup.last_event_index, 5);
             EXPECT_EQ(setup.bins, 1200);
@@ -38,7 +38,7 @@ namespace pointprocess::tests {
             unsigned long bins_in_window = 1000;
             unsigned long maxIter = 1000;
             auto wp = WeightsProducer();
-            auto setup = pp::PipelineSetup(delta, testEvents, rc, hasTheta0, ar_order, last_event_index, bins, bins_in_window, maxIter, wp);
+            auto setup = pp::PipelineSetup(delta, testEvents, hasTheta0, ar_order, last_event_index, bins, bins_in_window, wp);
 
             // Here I mock by hand all the hazard-rates (lambdas).
             std::vector<double> lambdas(setup.bins - setup.bins_in_window + 1,1.0);

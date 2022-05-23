@@ -16,8 +16,8 @@
 
 #include "../WeightsProducer.h"
 #include "../PointProcessDataset.h"
-#include "../PointProcessUtils.h"
 #include "../InterEventDistributions.h"
+#include "../DatasetBuffer.h"
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <deque>
@@ -64,13 +64,16 @@ public:
      * can change depending on the distribution (e.g. for the Inverse Gaussian we have to save the scale parameter kappa
      * too)
      */
-    virtual std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, bool rightCensoring, unsigned long nIter, double maxGrad);
+    virtual std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood,  bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne);
 
     /*
      * Compute a trivial estimate for the standard deviation (or kappa parameter for the Inverse Gaussian) based on the
      * sample variance computed on the observed inter-event intervals. It's virtual since the first parameter x[0]
      * doesn't always correspond to the standard deviation (e.g. for the Inverse Gaussian it corresponds to the scale
      * parameter kappa).
+     * TODO: In the future the number of additional parameters mey be higher than 1 (e.g. see the Beta distribution),
+     *  so it may be reasonable to change the following function in estimateAdditionalParameters() and return a
+     *  std::vector<double>
      */
     virtual double estimate_x0(const PointProcessDataset& dataset);
 
@@ -93,6 +96,9 @@ public:
     virtual double computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) = 0;
     // Compute the negative log likelihood function based on the current parameters x.
     virtual double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) = 0;
+    // Every distribution, have a variable number of parameters other than the mean (e.g. the sigma for the Normal distribution
+    //  or the scale parameter for the Inverse Gaussian), this function simply represents the number of parameters other than
+    virtual unsigned int getNumberOfAdditionalParams() = 0;
 
     /*
      * Once the computePDF and computeCDF functions are implemented in a derived class,
@@ -121,7 +127,7 @@ public:
     /*
      * Call the optimizeNewton() method multiple times based on the options defined in the PipelineSetup.
      */
-    std::vector<std::shared_ptr<pp::RegressionResult>> train(pp::PipelineSetup& setup);
+    std::vector<std::shared_ptr<pp::RegressionResult>> train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter);
 };
 
 #endif //POINTPROCESS_BASEOPTIMIZER_H
