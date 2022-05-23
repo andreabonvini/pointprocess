@@ -1,0 +1,14 @@
+coverage: # check here for more info: https://docs.codecov.com/docs/commit-status
+  status:
+    project:
+      default:
+        # basic
+        target: 60%
+        threshold: 0%
+        # advanced settings
+        branches:
+          - master
+        if_ci_failed: error #success, failure, error, ignore
+        informational: false
+        only_pulls: false
+    patch: off
