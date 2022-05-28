@@ -34,6 +34,11 @@ add_executable(
 
 )
 
-target_link_libraries(RunBenchmarks  Eigen3::Eigen Boost::boost benchmark::benchmark)
+if (WIN32)
+    target_link_libraries(RunBenchmarks Boost::boost benchmark::benchmark)
+else()
+    target_link_libraries(RunBenchmarks Eigen3::Eigen Boost::boost benchmark::benchmark)
+endif()
+
 
 

@@ -37,7 +37,7 @@ jobs:
               sudo apt install libeigen3-dev
               sudo apt-get install -y lcov
         # Runs a single command using the runners shell
-        - name: Build project with coverage flags, generte coverage report
+        - name: Build project with coverage flags, generate coverage report
           run: SHOW_COVERAGE=false ./build-and-run-cov.sh
         - name: Send converage report to codecov.
           run: bash <(curl -s https://codecov.io/bash) -f build-ci/coverage.info || echo
