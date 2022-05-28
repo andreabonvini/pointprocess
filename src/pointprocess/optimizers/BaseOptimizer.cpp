@@ -162,6 +162,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
 }
 // LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) {
 
     // Sigma = x[0]
@@ -190,8 +191,8 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::Vec
             maxGrad,
             converged,
             cdfIsOne);
-};
-
+}
+// LCOV_EXCL_STOP
 
 
 
@@ -213,8 +214,9 @@ double BaseOptimizer::computeLikelRc(const Eigen::VectorXd& x, const PointProces
             x.segment(1,x.size() - 1).dot(dataset.xt) > dataset.wn.array().maxCoeff()
             ) return INFINITY;
     return - rcEta * log(1.0 - computeCDF(x,dataset));
-};
+}
 
+// LCOV_EXCL_START
 void BaseOptimizer::updateHessianRc(const Eigen::VectorXd& x, const PointProcessDataset& dataset, Eigen::MatrixXd& hessianRc) {
     auto gradRight = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
     auto gradLeft = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
@@ -239,8 +241,10 @@ void BaseOptimizer::updateHessianRc(const Eigen::VectorXd& x, const PointProcess
         xRight[i] = x[i];
         xLeft[i] = x[i];
     }
-};
+}
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 double BaseOptimizer::estimate_x0(const PointProcessDataset& dataset) {
     assert(dataset.wn.size() > 2); // the number of target events (dataset.wn) is < 2, can't estimate x0!
     double mu_hat = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
@@ -249,7 +253,9 @@ double BaseOptimizer::estimate_x0(const PointProcessDataset& dataset) {
     // sigma = sqrt(Variance)
     return sqrt(var);
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProcessDataset& dataset, bool rightCensoring = false, unsigned int maxIter = 1000){
 
     auto startingPoint = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
@@ -277,7 +283,10 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProce
     return optimizeNewton(dataset, rightCensoring, maxIter, x, vars);
 
 }
+// LCOV_EXCL_STOP
 
+
+// LCOV_EXCL_START
 std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter) {
 
     unsigned int numberOfParams = datasetBuffer.getNumberOfRegressionParameters() + getNumberOfAdditionalParams();
@@ -357,3 +366,4 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetB
     }
     return results;
 }
+// LCOV_EXCL_STOP

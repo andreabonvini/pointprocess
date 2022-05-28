@@ -4,7 +4,121 @@
 
 #include "PointProcessUtils.h"
 
+// LCOV_EXCL_START
+pp::Stats::Stats(double ksDistance, double percOut, double autoCorr) : ksDistance(ksDistance), percOut(percOut),
+                                                                    autoCorr(autoCorr) {}
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
+pp::TmpVars::TmpVars(
+    Eigen::VectorXd gradient,
+    Eigen::MatrixXd hessian,
+    Eigen::VectorXd rcGradient,
+    Eigen::MatrixXd rcHessian,
+    Eigen::VectorXd xold,
+    Eigen::VectorXd alpha
+        ) :
+    gradient(std::move(gradient)),
+    hessian(std::move(hessian)),
+    rcGradient(std::move(rcGradient)),
+    rcHessian(std::move(rcHessian)),
+    xold(std::move(xold)),
+    alpha(std::move(alpha)){}
+// LCOV_EXCL_STOP
+
+pp::PipelineSetup::PipelineSetup(
+            double delta,
+            std::vector<double> events,
+            bool hasTheta0,
+            unsigned char AR_ORDER,
+            unsigned long last_event_index,
+            unsigned long b,
+            unsigned long biw,
+            WeightsProducer weightsProducer
+        ) :
+            delta(delta),
+            events(std::move(events)),
+            hasTheta0(hasTheta0),
+            AR_ORDER(AR_ORDER),
+            last_event_index(last_event_index),
+            bins(b),
+            bins_in_window(biw),
+            weightsProducer(weightsProducer) {}
+
+// LCOV_EXCL_START
+pp::RegressionResult::RegressionResult(
+        double theta0,
+        Eigen::VectorXd thetaP,
+        double mu,
+        double sigma,
+        double lambda,
+        double meanInterval,
+        long nIter,
+        double likelihood,
+        double maxGrad,
+        bool converged,
+        bool cdfIsOne
+    ) :
+    theta0(theta0),
+    thetaP(std::move(thetaP)),
+    mu(mu),
+    sigma(sigma),
+    lambda(lambda),
+    meanInterval(meanInterval),
+    nIter(nIter),
+    likelihood(likelihood),
+    maxGrad(maxGrad),
+    converged(converged),
+    cdfIsOne(cdfIsOne){}
+
+// I declare a virtual destructor just to have run-time type information (RTTI), which is needed
+// to guarantee polymorphic behaviour.
+pp::RegressionResult::~RegressionResult() = default;
+// LCOV_EXCL_STOP
+
+// LCOV_EXCL_START
+pp::IGRegressionResult::IGRegressionResult(double theta0_,
+       const Eigen::VectorXd &thetaP_,
+       double mu,
+       double sigma,
+       double lambda,
+       double meanInterval,
+       long nIter,
+       double likelihood,
+       double maxGrad,
+       double kappa,
+       bool converged,
+       bool cdfIsOne)
+    :
+    kappa(kappa),
+    pp::RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad, converged,cdfIsOne) {}
+// LCOV_EXCL_STOP
+
+
+// LCOV_EXCL_START
+pp::Result::Result(
+    std::vector<std::shared_ptr<pp::RegressionResult>> results,
+    std::vector<double> taus,
+    PointProcessDistributions distribution,
+    unsigned char AR_ORDER,
+    bool hasTheta0,
+    double windowLength,
+    double delta,
+    double t0,
+    Stats stats
+    ) :
+    results(std::move(results)),
+    taus(std::move(taus)),
+    distribution(distribution),
+    AR_ORDER(AR_ORDER),
+    hasTheta0(hasTheta0),
+    windowLength(windowLength),
+    delta(delta),
+    t0(t0),
+    stats(stats) {}
+// LCOV_EXCL_STOP
+
+// LCOV_EXCL_START
 pp::Stats pp::utils::computeStats(std::vector<double> &taus) {
     std::vector<double> rescaledTimes;
     Eigen::VectorXd z(taus.size());
@@ -27,10 +141,10 @@ pp::Stats pp::utils::computeStats(std::vector<double> &taus) {
     return Stats(ksDistance, percOut, autoCorr);
 
 }
+// LCOV_EXCL_STOP
 
 
-pp::PipelineSetup
-pp::utils::getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,
+pp::PipelineSetup pp::utils::getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,
                  double windowLength, double delta, WeightsProducer weightsProducer) {
 
     // Consistency check
@@ -98,7 +212,6 @@ void pp::utils::computeTaus(std::vector<double> &taus, const std::vector<double>
 }
 
 
-
 // LCOV_EXCL_START
 void pp::utils::serialize::ppResData2csv(Result &ppRes, const std::string &outputResultsName) {
     // The main Regression Results will be saved at outputResultsName
@@ -162,3 +275,4 @@ void pp::utils::logging::printProgress(double currentTime, double percentage) {
     fflush(stdout);
 }
 // LCOV_EXCL_STOP
+

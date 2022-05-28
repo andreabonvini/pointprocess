@@ -25,8 +25,7 @@ namespace pp {
         double percOut = 0.0;
         double autoCorr = 0.0;
 
-        Stats(double ksDistance, double percOut, double autoCorr) : ksDistance(ksDistance), percOut(percOut),
-                                                                    autoCorr(autoCorr) {}
+        Stats(double ksDistance, double percOut, double autoCorr);
     };
 
     struct TmpVars {
@@ -45,13 +44,7 @@ namespace pp {
                 Eigen::MatrixXd rcHessian,
                 Eigen::VectorXd xold,
                 Eigen::VectorXd alpha
-                ) :
-                gradient(std::move(gradient)),
-                hessian(std::move(hessian)),
-                rcGradient(std::move(rcGradient)),
-                rcHessian(std::move(rcHessian)),
-                xold(std::move(xold)),
-                alpha(std::move(alpha)){}
+        );
     };
 
     struct PipelineSetup {
@@ -63,6 +56,7 @@ namespace pp {
         unsigned long bins;
         unsigned long bins_in_window;
         WeightsProducer weightsProducer;
+
         PipelineSetup(
                 double delta,
                 std::vector<double> events,
@@ -72,17 +66,9 @@ namespace pp {
                 unsigned long b,
                 unsigned long biw,
                 WeightsProducer weightsProducer
-        ) :
-                delta(delta),
-                events(std::move(events)),
-                hasTheta0(hasTheta0),
-                AR_ORDER(AR_ORDER),
-                last_event_index(last_event_index),
-                bins(b),
-                bins_in_window(biw),
-                weightsProducer(weightsProducer) {}
+        );
     };
-
+    // LCOV_EXCL_START
     struct RegressionResult {
         double theta0;
         Eigen::VectorXd thetaP;
@@ -110,43 +96,34 @@ namespace pp {
                 double maxGrad,
                 bool converged,
                 bool cdfIsOne
-        ) :
-                theta0(theta0),
-                thetaP(std::move(thetaP)),
-                mu(mu),
-                sigma(sigma),
-                lambda(lambda),
-                meanInterval(meanInterval),
-                nIter(nIter),
-                likelihood(likelihood),
-                maxGrad(maxGrad),
-                converged(converged),
-                cdfIsOne(cdfIsOne){}
+        );
 
         // I declare a virtual destructor just to have run-time type information (RTTI), which is needed
         // to guarantee polymorphic behaviour.
-        virtual ~RegressionResult() = default;
+        virtual ~RegressionResult();
     };
+    // LCOV_EXCL_STOP
 
+    // LCOV_EXCL_START
     struct IGRegressionResult : RegressionResult {
         double kappa;
 
-        IGRegressionResult(double theta0_,
-                           const Eigen::VectorXd &thetaP_,
-                           double mu,
-                           double sigma,
-                           double lambda,
-                           double meanInterval,
-                           long nIter,
-                           double likelihood,
-                           double maxGrad,
-                           double kappa,
-                           bool converged,
-                           bool cdfIsOne)
-                :
-                kappa(kappa),
-                RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad, converged,cdfIsOne) {}
+        IGRegressionResult(
+                double theta0_,
+                const Eigen::VectorXd &thetaP_,
+                double mu,
+                double sigma,
+                double lambda,
+                double meanInterval,
+                long nIter,
+                double likelihood,
+                double maxGrad,
+                double kappa,
+                bool converged,
+                bool cdfIsOne
+        );
     };
+    // LCOV_EXCL_STOP
 
     struct Result { // TODO: add Documentation
         std::vector<std::shared_ptr<RegressionResult>> results;
@@ -169,16 +146,7 @@ namespace pp {
                 double delta,
                 double t0,
                 Stats stats
-        ) :
-                results(std::move(results)),
-                taus(std::move(taus)),
-                distribution(distribution),
-                AR_ORDER(AR_ORDER),
-                hasTheta0(hasTheta0),
-                windowLength(windowLength),
-                delta(delta),
-                t0(t0),
-                stats(stats) {}
+        );
     };
 
     namespace utils {
@@ -218,7 +186,6 @@ namespace pp {
         }
 
         namespace logging {
-
             void printProgress(double currentTime, double percentage);
         }
     }

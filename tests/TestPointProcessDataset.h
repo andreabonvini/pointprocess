@@ -110,7 +110,7 @@ namespace pointprocess::tests {
                     3.0,2.0,1.0;
 
             Eigen::MatrixXd res(col.size(),row.size());
-            toeplitz(col,row,res);
+            PointProcessDataset::toeplitz(col,row,res);
             EXPECT_TRUE(res.isApprox(expected));
         }
 
@@ -123,7 +123,7 @@ namespace pointprocess::tests {
                     3.0,2.0,1.0,
                     4.0,3.0,2.0;
             Eigen::MatrixXd res(col.size(),row.size());
-            toeplitz(col,row,res);
+            PointProcessDataset::toeplitz(col,row,res);
 
             EXPECT_TRUE(res.isApprox(expected));
         }
@@ -135,7 +135,7 @@ namespace pointprocess::tests {
                     6.0,5.0,2.0,3.0,
                     7.0,6.0,5.0,2.0;
             Eigen::MatrixXd res(col.size(),row.size());
-            toeplitz(col,row,res);
+            PointProcessDataset::toeplitz(col,row,res);
             EXPECT_TRUE(res.isApprox(expected));
         }
     }
