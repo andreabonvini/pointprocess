@@ -10,10 +10,20 @@
       "name": "gcc-coverage",
       "displayName": "Code coverage (GCC)",
       "description": "Enable code coverage on GCC-compatible compilers",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build-ci",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_CXX_FLAGS": "-fprofile-arcs -ftest-coverage"
+        "CMAKE_CXX_FLAGS": "-fprofile-arcs -ftest-coverage -Ofast -DEIGEN_NO_DEBUG -fno-math-errno -ffast-math"
+      }
+    },
+    {
+      "name": "build-release",
+      "displayName": "Release",
+      "description": "Build the full project in Release",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS": "-Ofast -DEIGEN_NO_DEBUG -fno-math-errno -ffast-math"
       }
     }
   ],
@@ -22,6 +32,11 @@
       "name": "gcc-coverage",
       "configurePreset": "gcc-coverage",
       "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "build-release",
+      "configurePreset": "build-release",
+      "configuration": "Release"
     }
   ]
 }

@@ -1,5 +1,5 @@
 # Project exclude paths
-build/*
+build*/*
 docs/build/*
 cmake-build-debug/*
 cmake-build-release/*

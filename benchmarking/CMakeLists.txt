@@ -17,8 +17,21 @@ add_executable(
         RunBenchmarks RunBenchmarks.cpp
         ../src/pointprocess/optimizers/BaseOptimizer.cpp
         ../src/pointprocess/optimizers/BaseOptimizer.h
+        ../src/pointprocess/optimizers/GaussianOptimizer.cpp
+        ../src/pointprocess/optimizers/GaussianOptimizer.h
+        ../src/pointprocess/optimizers/InverseGaussianOptimizer.cpp
+        ../src/pointprocess/optimizers/InverseGaussianOptimizer.h
+        ../src/pointprocess/optimizers/LogNormalOptimizer.cpp
+        ../src/pointprocess/optimizers/LogNormalOptimizer.h
         ../src/pointprocess/PointProcessUtils.cpp
         ../src/pointprocess/PointProcessUtils.h
+        ../src/pointprocess/WeightsProducer.cpp
+        ../src/pointprocess/WeightsProducer.h
+        ../src/pointprocess/PointProcessDataset.cpp
+        ../src/pointprocess/PointProcessDataset.h
+        ../src/pointprocess/DatasetBuffer.cpp
+        ../src/pointprocess/DatasetBuffer.h
+
 )
 
 target_link_libraries(RunBenchmarks  Eigen3::Eigen Boost::boost benchmark::benchmark)

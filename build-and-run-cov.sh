@@ -12,9 +12,6 @@ export SHOW_COVERAGE="${SHOW_COVERAGE:-true}"
 # Record the base directory
 BASE_DIR=$PWD
 
-# Clean up old build
-rm -rf build
-
 # Configure
 cmake --preset gcc-coverage
 
@@ -22,7 +19,7 @@ cmake --preset gcc-coverage
 cmake --build --preset gcc-coverage
 
 # Enter build directory
-cd build
+cd build-ci
 
 # Clean-up counters for any previous run.
 lcov --zerocounters --directory .

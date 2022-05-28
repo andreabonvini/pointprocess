@@ -13,10 +13,6 @@ Build with CMake
 
 Once you cloned the repository, you can build the shared library along with some examples, by running the following commands: ::
 
-   cd pointprocess
-   mkdir build
-   cd build
-   cmake ..
-   make
+   ./build.sh
 
-Your executables will be in the :code:`build/` folder.
+The library will be in the :code:`build/src` folder.
