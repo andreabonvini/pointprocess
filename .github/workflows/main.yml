@@ -40,7 +40,7 @@ jobs:
         - name: Build project with coverage flags, generte coverage report
           run: SHOW_COVERAGE=false ./build-and-run-cov.sh
         - name: Send converage report to codecov.
-          run: bash <(curl -s https://codecov.io/bash) -f build/coverage.info || echo
+          run: bash <(curl -s https://codecov.io/bash) -f build-ci/coverage.info || echo
     build-MacOS:
       # The type of runner that the job will run on
       runs-on: macos-latest
@@ -60,7 +60,7 @@ jobs:
           shell: bash
           run: |
             mkdir -p build && cd build
-            cmake ..
+            cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
             make
         # Runs a set of commands using the runners shell
         - name: Run Tests
@@ -84,7 +84,7 @@ jobs:
           shell: bash
           run: |
             mkdir -p build && cd build
-            cmake ..
+            cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
             cmake --build .
         # Runs a set of commands using the runners shell
         - name: Run Tests
