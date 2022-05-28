@@ -15,14 +15,7 @@ FetchContent_MakeAvailable(googletest)
 
 
 find_package(Boost REQUIRED)
-if(Boost_FOUND)
-    message(STATUS "Boost found!")
-endif()
-
 find_package (Eigen3 3.3 REQUIRED)
-if(Eigen3_FOUND)
-    message(STATUS "Eigen found!")
-endif()
 
 IF( NOT EIGEN3_INCLUDE_DIR )
     MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")

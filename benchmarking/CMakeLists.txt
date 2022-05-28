@@ -9,8 +9,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googlebenchmark)
 
-find_package (Eigen3 3.3 REQUIRED)
 find_package(Boost REQUIRED)
+find_package (Eigen3 3.3 REQUIRED)
+
+IF( NOT EIGEN3_INCLUDE_DIR )
+    MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
+ENDIF()
+INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
 
 # We define a single executable (RunBenchmarks.cpp) that will run all the available benchmarks.
 add_executable(
@@ -31,7 +36,6 @@ add_executable(
         ../src/pointprocess/PointProcessDataset.h
         ../src/pointprocess/DatasetBuffer.cpp
         ../src/pointprocess/DatasetBuffer.h
-
 )
 
 if (WIN32)
