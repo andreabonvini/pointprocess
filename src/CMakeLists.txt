@@ -15,8 +15,20 @@ else()
     message(STATUS "No suitable compiler flag found for vectorization")
 endif()
 
-add_library(
-        pointprocess SHARED library.cpp
+# FetchContent is one of the modules which are part of the CMake distribution, we use it mainly to load an external
+#  project such as, in this case, PyBind11 (needed to create Python bindings)
+include(FetchContent)
+
+# Automatically fetch pybind11 from github...
+FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11.git
+        GIT_TAG        master
+)
+FetchContent_MakeAvailable(pybind11)
+
+pybind11_add_module(
+        pointprocess SHARED pointprocess.cpp
         pointprocess/InterEventDistributions.h
         pointprocess/WeightsProducer.cpp
         pointprocess/WeightsProducer.h
@@ -28,14 +40,16 @@ add_library(
         pointprocess/optimizers/BaseOptimizer.h
         pointprocess/optimizers/InverseGaussianOptimizer.cpp
         pointprocess/optimizers/InverseGaussianOptimizer.h
-        external/csv.h
         pointprocess/optimizers/GaussianOptimizer.cpp
         pointprocess/optimizers/GaussianOptimizer.h
         pointprocess/optimizers/LogNormalOptimizer.cpp
         pointprocess/optimizers/LogNormalOptimizer.h
+        pointprocess/OptimizersFactory.cpp
         pointprocess/OptimizersFactory.h
         pointprocess/PointProcessUtils.h pointprocess/PointProcessUtils.cpp
         pointprocess/DatasetBuffer.cpp pointprocess/DatasetBuffer.h
+        pointprocess/spectral/spectral.cpp pointprocess/spectral/spectral.h
+        external/indicators.h
 )
 
 
@@ -46,11 +60,10 @@ find_package (Eigen3 3.3 REQUIRED)
 IF( NOT EIGEN3_INCLUDE_DIR )
     MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
 ENDIF()
-INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
 
 if (WIN32)
-    target_link_libraries(pointprocess Boost::boost)
+    target_link_libraries(pointprocess PRIVATE Boost::boost)
 else()
-    target_link_libraries (pointprocess Boost::boost Eigen3::Eigen)
+    target_link_libraries (pointprocess PRIVATE Boost::boost Eigen3::Eigen)
 endif()
 

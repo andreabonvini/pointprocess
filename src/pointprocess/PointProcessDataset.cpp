@@ -14,6 +14,7 @@ PointProcessDataset::PointProcessDataset(
         Eigen::VectorXd xt_,
         double wt_
 ){
+    // FixMe: Isn't it wiser to passe the Eigen:VectorXd objects by reference?
     N_SAMPLES = N_SAMPLES_;
     AR_ORDER = AR_ORDER_;
     hasTheta0 = hasTheta0_;

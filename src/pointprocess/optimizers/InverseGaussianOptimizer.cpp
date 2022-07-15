@@ -5,7 +5,7 @@
 #include "InverseGaussianOptimizer.h"
 
 
-InverseGaussianOptimizer::InverseGaussianOptimizer(): BaseOptimizer(PointProcessDistributions::InverseGaussian){};
+InverseGaussianOptimizer::InverseGaussianOptimizer(): BaseOptimizer(pointprocess::Distributions::InverseGaussian){};
 
 void InverseGaussianOptimizer::populateStartingPoint(Eigen::VectorXd& startingPoint){
     // Kappa = x[0]
@@ -114,7 +114,7 @@ double InverseGaussianOptimizer::computeLikel(const Eigen::VectorXd& x, const Po
     }
 }
 
-std::shared_ptr<pp::RegressionResult> InverseGaussianOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne){
+std::shared_ptr<pointprocess::RegressionResult> InverseGaussianOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened){
 
     // Kappa = x[0]
     // Theta = x.segment(1,x.size() - 1)
@@ -128,8 +128,9 @@ std::shared_ptr<pp::RegressionResult> InverseGaussianOptimizer::packResult(const
     double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
     double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
     double sigma = sqrt(pow(mu,3.0) / x[0]); // Variance = Mu^3 /Kappa
+    double kappa = x[0];
 
-    return std::make_shared<pp::IGRegressionResult>(
+    return std::make_shared<pointprocess::IGRegressionResult>(
             dataset.hasTheta0 ? x[1] : 0.0,
             dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1),
             mu,
@@ -141,7 +142,9 @@ std::shared_ptr<pp::RegressionResult> InverseGaussianOptimizer::packResult(const
             maxGrad,
             x[0],
             converged,
-            cdfIsOne
+            cdfIsOne,
+            eventHappened,
+            time
             );
 }
 

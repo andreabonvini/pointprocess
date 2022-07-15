@@ -6,6 +6,7 @@
 #define POINTPROCESS_POINTPROCESSUTILS_H
 
 #include <vector>
+#include <map>
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -13,12 +14,14 @@
 #include <Eigen/Eigenvalues>
 #include "WeightsProducer.h"
 #include "InterEventDistributions.h"
+#include "spectral/spectral.h"
+#include "../external/indicators.h"
 
-#define PBSTR "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-#define PBWIDTH 60
+// #include <pybind11/iostream.h> // Needed to redirect stdout to Python
 
 
-namespace pp {
+
+namespace pointprocess {
 
     struct Stats {
         double ksDistance = 0.0;
@@ -76,13 +79,14 @@ namespace pp {
         double sigma;
         double lambda;
         double meanInterval;
-        double time = 0.0;
         unsigned long nIter;
         double likelihood;
-        bool eventHappened;
         double maxGrad;
         bool converged;
         bool cdfIsOne;
+        bool eventHappened;
+        double time;
+        pointprocess::spectral::HeartRateVariabilityIndices hrvIndices{};
 
         RegressionResult(
                 double theta0,
@@ -91,16 +95,19 @@ namespace pp {
                 double sigma,
                 double lambda,
                 double meanInterval,
-                long nIter,
+                unsigned long nIter,
                 double likelihood,
                 double maxGrad,
                 bool converged,
-                bool cdfIsOne
+                bool cdfIsOne,
+                bool eventHappened = false,
+                double time = -1.0
         );
 
         // I declare a virtual destructor just to have run-time type information (RTTI), which is needed
         // to guarantee polymorphic behaviour.
         virtual ~RegressionResult();
+        void computeHRVIndices();
     };
     // LCOV_EXCL_STOP
 
@@ -110,17 +117,19 @@ namespace pp {
 
         IGRegressionResult(
                 double theta0_,
-                const Eigen::VectorXd &thetaP_,
+                Eigen::VectorXd thetaP_,
                 double mu,
                 double sigma,
                 double lambda,
                 double meanInterval,
-                long nIter,
+                unsigned long nIter,
                 double likelihood,
                 double maxGrad,
                 double kappa,
                 bool converged,
-                bool cdfIsOne
+                bool cdfIsOne,
+                bool eventHappened = false,
+                double time = -1.0
         );
     };
     // LCOV_EXCL_STOP
@@ -128,7 +137,7 @@ namespace pp {
     struct Result { // TODO: add Documentation
         std::vector<std::shared_ptr<RegressionResult>> results;
         std::vector<double> taus;
-        PointProcessDistributions distribution;
+        Distributions distribution;
         unsigned char AR_ORDER;
         bool hasTheta0;
         double windowLength;
@@ -139,7 +148,7 @@ namespace pp {
         Result(
                 std::vector<std::shared_ptr<RegressionResult>> results,
                 std::vector<double> taus,
-                PointProcessDistributions distribution,
+                Distributions distribution,
                 unsigned char AR_ORDER,
                 bool hasTheta0,
                 double windowLength,
@@ -147,6 +156,11 @@ namespace pp {
                 double t0,
                 Stats stats
         );
+
+        void computeHRVIndices();
+        std::map<std::string, Eigen::MatrixXd> toDict();
+    private:
+        bool hrvIndicesComputed = false;
     };
 
     namespace utils {
@@ -183,10 +197,6 @@ namespace pp {
             void ppResData2csv(Result &ppRes, const std::string &outputResultsName);
 
             void ppResTaus2csv(Result &ppRes, const std::string &outputTausName);
-        }
-
-        namespace logging {
-            void printProgress(double currentTime, double percentage);
         }
     }
 }

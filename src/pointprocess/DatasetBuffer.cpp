@@ -23,7 +23,7 @@ DatasetBuffer::Iterator::Iterator(
         ) {}
 
 // TODO: what is this const?
-DatasetBuffer::Iterator::valueType DatasetBuffer::Iterator::operator*() const {return values;}
+DatasetBuffer::Iterator::value_type DatasetBuffer::Iterator::operator*() const {return values;}
 // reference operator*() const { return *m_ptr; }
 
 // pointer operator->() { return m_ptr; }
@@ -52,7 +52,7 @@ bool operator!=(const DatasetBuffer::Iterator& a, const DatasetBuffer::Iterator&
 
     // ============================ End Iterator definition ==================================
 
-DatasetBuffer::DatasetBuffer(pp::PipelineSetup& setup)
+DatasetBuffer::DatasetBuffer(pointprocess::PipelineSetup& setup)
             :
             AR_ORDER_(setup.AR_ORDER),
             hasTheta0_(setup.hasTheta0),

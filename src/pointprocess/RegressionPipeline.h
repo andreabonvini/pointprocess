@@ -20,7 +20,7 @@
 class RegressionPipeline{
 private:
   // One of the enumeration values of PointProcessDistributions, either,  InverseGaussian, LogNormal, Gaussian
-  PointProcessDistributions distribution;
+  pointprocess::Distributions distribution;
   
   // AR order to use for the estimation of the first moment of the given distribution.
   unsigned char AR_ORDER;
@@ -30,9 +30,9 @@ private:
   
 public:
   RegressionPipeline(
-    PointProcessDistributions distribution,
-    unsigned char AR_ORDER,
-    bool hasTheta0
+          pointprocess::Distributions distribution,
+          unsigned char AR_ORDER,
+          bool hasTheta0
     );
   
     /**************************************************************************************************************
@@ -55,14 +55,14 @@ public:
          *                     more accurate estimates for the first and second moment of the selected distribution.
          *     maxIter: maximum number of iterations allowed for each optimization procedure.
     ************************************************************************************************************/
-    [[nodiscard]] pp::Result fullRegression(
+    pointprocess::Result fullRegression(
             const std::vector<double>& events_times,
             double windowLength,
             double delta,
             bool rightCensoring,
             unsigned int maxIter,
-            WeightsProducer weightsProducer
-      ) const;
+            double alpha
+      );
 };
 
 

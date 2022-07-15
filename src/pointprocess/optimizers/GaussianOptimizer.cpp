@@ -5,7 +5,7 @@
 #include "GaussianOptimizer.h"
 
 
-GaussianOptimizer::GaussianOptimizer(): BaseOptimizer(PointProcessDistributions::Gaussian){};
+GaussianOptimizer::GaussianOptimizer(): BaseOptimizer(pointprocess::Distributions::Gaussian){};
 
 void GaussianOptimizer::populateStartingPoint(Eigen::VectorXd& startingPoint){
     // Sigma = x[0]

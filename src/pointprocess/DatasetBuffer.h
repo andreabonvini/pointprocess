@@ -16,14 +16,14 @@ public:
     // ============================ Start Iterator definition ==================================
     struct Iterator
     {
-        using valueType = std::tuple<double, bool, bool, PointProcessDataset>;
-        using pointer  = valueType*;
-        using reference = valueType&;
+        using value_type = std::tuple<double, bool, bool, PointProcessDataset>;
+        using pointer  = value_type*;
+        using reference = value_type&;
 
         Iterator(DatasetBuffer* ptr, unsigned long bin_index);
 
         // TODO: what is this const?
-        valueType operator*() const;
+        value_type operator*() const;
         // reference operator*() const { return *m_ptr; }
 
         // pointer operator->() { return m_ptr; }
@@ -39,12 +39,12 @@ public:
         friend bool operator!= (const Iterator& a, const Iterator& b);
     private:
         DatasetBuffer* m_ptr;
-        valueType values;
+        value_type values;
         unsigned long bin_index;
     };
     // ============================ End Iterator definition ==================================
 
-    explicit DatasetBuffer(pp::PipelineSetup& setup);
+    explicit DatasetBuffer(pointprocess::PipelineSetup& setup);
 
     [[nodiscard]] unsigned int getNumberOfRegressionParameters() const;
 
