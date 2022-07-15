@@ -40,7 +40,7 @@ jobs:
         - name: Build project with coverage flags, generate coverage report
           run: SHOW_COVERAGE=false ./build-and-run-cov.sh
         - name: Send converage report to codecov.
-          run: bash <(curl -s https://codecov.io/bash) -f build-ci/coverage.info || echo
+          run: bash <(curl -s https://codecov.io/bash) -f build-tests/coverage.info || echo
     build-MacOS:
       # The type of runner that the job will run on
       runs-on: macos-latest

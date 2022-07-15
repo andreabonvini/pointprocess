@@ -34,8 +34,13 @@ add_executable(
         ../src/pointprocess/WeightsProducer.h
         ../src/pointprocess/PointProcessDataset.cpp
         ../src/pointprocess/PointProcessDataset.h
+        ../src/pointprocess/OptimizersFactory.cpp
+        ../src/pointprocess/OptimizersFactory.h
         ../src/pointprocess/DatasetBuffer.cpp
         ../src/pointprocess/DatasetBuffer.h
+        ../src/pointprocess/spectral/spectral.cpp
+        ../src/pointprocess/spectral/spectral.h
+        ../src/external/indicators.h
 )
 
 if (WIN32)

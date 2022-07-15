@@ -18,7 +18,7 @@ A :code:`RegressionPipeline` object is all you need in order to perform a :code:
     int main() {
         auto td = getTestData();
         auto pip = RegressionPipeline(
-                PointProcessDistributions::InverseGaussian, // distribution
+                Distributions::InverseGaussian, // distribution
                 9, // AR_ORDER
                 true // hasTheta0
                 );
@@ -42,7 +42,7 @@ The output of the :code:`fullRegression()` method is a :code:`PointProcessResult
     struct PointProcessResult{
         std::vector<std::shared_ptr<RegressionResult>> results;
         std::vector<double> taus;
-        PointProcessDistributions distribution;
+        Distributions distribution;
         double percOut;
         double ksDistance;
         double t0;
