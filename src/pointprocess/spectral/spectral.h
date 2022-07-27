@@ -65,6 +65,9 @@ namespace pointprocess::spectral{
     );
 
     Eigen::VectorXd hamming(int n);
+
+
+    Eigen::VectorXd filter1D(Eigen::VectorXd& x, Eigen::VectorXd& b, Eigen::VectorXd& a);
 }
 
 

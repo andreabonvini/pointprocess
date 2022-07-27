@@ -79,6 +79,31 @@ namespace pointprocess {
             auto result = pointprocess::spectral::computePoles(thetaP, var, fSamp);
         }
         */
+        TEST(TestSpectral,TestFilter1D1){
+            /*
+             * b = (1,2,3)
+             * x = (10,20,30,40,50,60)
+             * y = (
+             *      1*10               = 10
+             *      1*20 + 2*10        = 40
+             *      1*30 + 2*20 + 3*10 = 100
+             *      1*40 + 2*30 + 3*20 = 160
+             *      1*50 + 2*40 + 3*30 = 220
+             *      1*60 + 2*50 + 3*40 = 280
+             *
+             *
+             */
+            Eigen::VectorXd b(3);
+            b << 1.0,2.0,3.0;
+            Eigen::VectorXd a = Eigen::VectorXd::Ones((long) 1);
+            Eigen::VectorXd x(6);
+            x << 10.0,20.0,30.0,40.0,50.0,60.0;
+
+            auto result = pointprocess::spectral::filter1D(x,b,a);
+            Eigen::VectorXd expected(6);
+            expected << 10.0,40.0,100.0,160.0,220.0,280.0;
+            EXPECT_TRUE(result.isApprox(expected));
+        }
 
     }
 }

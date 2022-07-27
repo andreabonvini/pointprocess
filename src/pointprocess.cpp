@@ -200,6 +200,20 @@ PYBIND11_MODULE(pointprocess, m) {
             .def_readwrite("perc_out", &pointprocess::Stats::percOut)
             .def_readwrite("auto_corr", &pointprocess::Stats::autoCorr);
 
+    py::class_<pointprocess::KsCoords>(m,"KsCoords")
+            .def(
+                    py::init<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd,Eigen::VectorXd>(),
+                            py::arg("z"),
+                            py::arg("inner"),
+                            py::arg("upper"),
+                            py::arg("lower")
+            )
+            .def_readwrite("z", &pointprocess::KsCoords::z)
+            .def_readwrite("inner", &pointprocess::KsCoords::lin)
+            .def_readwrite("upper", &pointprocess::KsCoords::lu)
+            .def_readwrite("lower", &pointprocess::KsCoords::ll);
+
+
 
     py::class_<pointprocess::Result>(m, "Result")
             .def(
@@ -265,6 +279,13 @@ PYBIND11_MODULE(pointprocess, m) {
             py::arg("distribution"),
             py::arg("max_iter")
     );
+
+    m.def(
+            "get_ks_coords",
+            &pointprocess::utils::getKsCoords,
+            "This function returns the transformed taus and coordinates useful to create a KS plot.",
+            py::arg("taus")
+            );
 
     m.def(
             "compute_full_regression",

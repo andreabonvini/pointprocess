@@ -49,7 +49,7 @@ pointprocess::spectral::HeartRateVariabilityIndices::HeartRateVariabilityIndices
     powHF = -1.0;
 
 }
-// LCOV_EXCL_STOP
+// LCOV_EXCL_END
 
 
 pointprocess::spectral::HeartRateVariabilityIndices
@@ -83,9 +83,6 @@ bool pointprocess::spectral::areConj(
         const std::complex<double>& c2,
         double tol
         ){
-    std::cout << "========\n";
-    std::cout << (std::real(c1) - std::real(c2) < tol) << std::endl;
-    std::cout << (std::imag(c1) + std::imag(c2) < tol) << std::endl;
     return(
             (std::abs(std::real(c1) - std::real(c2)) < tol)
             &&
@@ -186,7 +183,7 @@ std::vector<pointprocess::spectral::Pole> pointprocess::spectral::computePoles(
     }
     return poles;
 }
-// LCOV_EXCL_END
+// LCOV_EXCL_STOP
 
 
 // TODO: test!
@@ -272,7 +269,7 @@ pointprocess::spectral::computeSpectralAnalysis(
             (aggregate ? polesCompsAgg : polesComps)
     };
 }
-// LCOV_EXCL_END
+// LCOV_EXCL_STOP
 
 
 Eigen::VectorXd pointprocess::spectral::hamming(int n){
@@ -281,5 +278,48 @@ Eigen::VectorXd pointprocess::spectral::hamming(int n){
         w(i) = 0.54 - 0.46*std::cos(2.0*M_PI*static_cast<float>(i)/n);
     }
     return w;
+}
+
+
+Eigen::VectorXd pointprocess::spectral::filter1D(Eigen::VectorXd& x, Eigen::VectorXd& b, Eigen::VectorXd& a){
+    // TODO: probably not so efficient for huge x vectors, optimize.
+    // TODO: only the case where a = [1] has been implemented so far.
+    // https://it.mathworks.com/help/matlab/data_analysis/filtering-data.html
+    // a(1)y(n)=b(1)x(n)+b(2)x(n−1)+…+b(N_b)x(n−N_b + 1)−a(2)y(n−1)−…−a(N_a)y(n−N_a + 1)
+    /* e.g.
+     * b = (1,2,3)
+     * x = (10,20,30,40,50,60)
+     * y = (
+     *      1*10               = 10
+     *      1*20 + 2*10        = 40
+     *      1*30 + 2*20 + 3*10 = 100
+     *      1*40 + 2*30 + 3*20 = 160
+     *      1*50 + 2*40 + 3*30 = 220
+     *      1*60 + 2*50 + 3*40 = 280
+     *
+     *
+     *  X = 10 00 00
+     *      20 10 00
+     *      30 20 10
+     *      40 30 20
+     *      50 40 30
+     *      60 50 40
+     *
+            )
+    */
+    Eigen::VectorXd result(x.size());
+    if (a.size() == 1){
+        Eigen::MatrixXd X = Eigen::MatrixXd::Zero(x.size(), b.size());
+        for(int i =0; i < x.size(); i++){
+            for(int j=0; j < b.size(); j++){
+                if((i-j)>=0)
+                    X(i,j) = x(i-j);
+            }
+        }
+        result = X * b;
+    }
+
+    return result;
+
 }
 

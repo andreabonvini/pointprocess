@@ -213,7 +213,6 @@ void pointprocess::Result::computeHRVIndices(){
     };
 
 
-
     Eigen::VectorXd powLFVector(results.size());
     Eigen::VectorXd powHFVector(results.size());
 
@@ -226,7 +225,7 @@ void pointprocess::Result::computeHRVIndices(){
         }
         lastValidPowLF = results[i]->hrvIndices.powLF;
 
-        powHFVector(i) = results[i]->hrvIndices.powLF;
+        powLFVector(i) = results[i]->hrvIndices.powLF;
 
         if (results[i]->hrvIndices.powHF <= 0){
             results[i]->hrvIndices.powHF = lastValidPowHF;
@@ -259,11 +258,46 @@ void pointprocess::Result::computeHRVIndices(){
     powTot = decimate(powTot, dwsample, 'fir');
     end
     */
+
+    // ================== Low pass filtering for powLF and powHF =========================
+
     unsigned int b = std::ceil(static_cast<double>(results.size()) / 10.0);
     Eigen::VectorXd hamming_window;
     if (b>1){
         hamming_window = pointprocess::spectral::hamming(std::min(static_cast<unsigned int>(21),b));
         hamming_window = hamming_window.array() / hamming_window.array().sum();
+    }
+    Eigen::VectorXd one =  Eigen::VectorXd::Ones(1);
+
+    // ================ powHF =====================
+
+    powHFVector = pointprocess::spectral::filter1D(
+            powHFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+    powHFVector = pointprocess::spectral::filter1D(
+            powHFVector,
+            hamming_window,
+            one
+            ).array().reverse();
+
+    // ================ powLF =====================
+
+    powLFVector = pointprocess::spectral::filter1D(
+            powLFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+    powLFVector = pointprocess::spectral::filter1D(
+            powLFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+
+    for(int i = 0; i < results.size(); i++){
+        results[i]->hrvIndices.powLF = powLFVector(i);
+        results[i]->hrvIndices.powHF = powHFVector(i);
     }
 
     hrvIndicesComputed = true;
@@ -352,6 +386,32 @@ std::map<std::string, Eigen::MatrixXd> pointprocess::Result::toDict(){
 
 // LCOV_EXCL_START
 pointprocess::Stats pointprocess::utils::computeStats(std::vector<double> &taus) {
+
+    auto coords = pointprocess::utils::getKsCoords(taus);
+    double ksDistance = (coords.z.array() - coords.lin.array()).abs().maxCoeff() / sqrt(2.0);
+    double percOut = 0.0;
+    for (long i = 0; i < coords.z.size(); i++) {
+        percOut += (double) coords.z[i] < coords.ll[i] || coords.z[i] > coords.lu[i];
+    }
+    double autoCorr = 0.0; // TODO: IMPLEMENT!
+    percOut = percOut / ((double) coords.z.size());
+    return {ksDistance, percOut, autoCorr};
+}
+// LCOV_EXCL_STOP
+
+pointprocess::KsCoords::KsCoords(
+            Eigen::VectorXd z_,
+            Eigen::VectorXd lin_,
+            Eigen::VectorXd lu_,
+            Eigen::VectorXd ll_
+    ){
+        z = std::move(z_);
+        lin = std::move(lin_);
+        lu = std::move(lu_);
+        ll = std::move(ll_);
+    }
+
+pointprocess::KsCoords pointprocess::utils::getKsCoords(std::vector<double> &taus) {
     std::vector<double> rescaledTimes;
     Eigen::VectorXd z(taus.size());
     for (long i = 0; i < taus.size(); i++) {
@@ -363,17 +423,9 @@ pointprocess::Stats pointprocess::utils::computeStats(std::vector<double> &taus)
     auto lin = Eigen::VectorXd::LinSpaced(z.size(), 0.0, 1.0);
     auto lu = Eigen::VectorXd::LinSpaced(z.size(), 1.36 / sqrt(z.size()), 1.0 + 1.36 / sqrt(z.size()));
     auto ll = Eigen::VectorXd::LinSpaced(z.size(), -1.36 / sqrt(z.size()), 1.0 - 1.36 / sqrt(z.size()));
-    double ksDistance = (z.array() - lin.array()).abs().maxCoeff() / sqrt(2.0);
-    double percOut = 0.0;
-    double autoCorr = 0.0; // TODO: IMPLEMENT!
-    for (long i = 0; i < z.size(); i++) {
-        percOut += (double) z[i] < ll[i] || z[i] > lu[i];
-    }
-    percOut = percOut / ((double) z.size());
-    return {ksDistance, percOut, autoCorr};
-
+    return {z, lin, lu, ll};
 }
-// LCOV_EXCL_STOP
+
 
 
 pointprocess::PipelineSetup pointprocess::utils::getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,

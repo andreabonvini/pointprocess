@@ -50,6 +50,19 @@ namespace pointprocess {
         );
     };
 
+    struct KsCoords{
+        Eigen::VectorXd z;
+        Eigen::VectorXd lin;
+        Eigen::VectorXd lu;
+        Eigen::VectorXd ll;
+        KsCoords(
+            Eigen::VectorXd z_,
+            Eigen::VectorXd lin_,
+            Eigen::VectorXd lu_,
+            Eigen::VectorXd ll_
+            );
+    };
+
     struct PipelineSetup {
         double delta;
         std::vector<double> events;
@@ -192,12 +205,7 @@ namespace pointprocess {
         // TODO: add documentation
         void computeTaus(std::vector<double> &taus, const std::vector<double> &lambdas, const PipelineSetup &setup);
 
-        namespace serialize {
-
-            void ppResData2csv(Result &ppRes, const std::string &outputResultsName);
-
-            void ppResTaus2csv(Result &ppRes, const std::string &outputTausName);
-        }
+        KsCoords getKsCoords(std::vector<double> &taus);
     }
 }
 

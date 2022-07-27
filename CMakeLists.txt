@@ -1,5 +1,5 @@
 # Set minimum CMake's version required in order to build the project.
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.22)
 
 # Define Project name.
 project(pointprocess)

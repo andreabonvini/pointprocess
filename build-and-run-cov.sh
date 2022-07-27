@@ -18,7 +18,9 @@ cmake --preset tests-with-coverage
 # Build
 cmake --build --preset tests-with-coverage
 
-# Enter build directory
+
+# Create and enter build directory
+mkdir -p build-tests
 cd build-tests
 
 # Clean-up counters for any previous run.

@@ -24,3 +24,11 @@ and [Boost](https://www.boost.org).
 # Documentation
 
 The technical and scientific *documentation* for this repository is available [here](https://pointprocess.readthedocs.io/en/latest/). (WIP)
+
+## Quick Tour
+
+### Demo video
+
+<img src="docs/videos/out.gif" style="zoom:30%;" />
+
+(WIP)
