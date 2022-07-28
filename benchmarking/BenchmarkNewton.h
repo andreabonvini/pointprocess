@@ -76,12 +76,14 @@ static void BM_optimizeNewton(benchmark::State& state) {
     double totalLikelihood = 0.0;
     double percentageOfConvergence = 0.0;
     double percentageOfCDFisOne = 0.0;
-    unsigned int i = 0;
     for (auto& res: results){
-        totalLikelihood += res->likelihood;
         if(std::isinf(res->likelihood)){
-            i++;
-            std::cout << i << std::endl;
+            std::cout << "Infinite likelihood detected" << std::endl;
+        }
+        else{
+            // FIXME; it still is infinite! Check the values of likelihood when the optimization procedure doesn't
+            // converge.
+            totalLikelihood += res->likelihood;
         }
         percentageOfConvergence += (double) res->converged;
         percentageOfCDFisOne += (double) res->cdfIsOne;

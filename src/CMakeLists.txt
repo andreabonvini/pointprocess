@@ -63,6 +63,7 @@ ENDIF()
 
 if (WIN32)
     target_link_libraries(pointprocess PRIVATE Boost::boost)
+    target_include_directories(pointprocess PRIVATE ${EIGEN3_INCLUDE_DIR})
 else()
     target_link_libraries (pointprocess PRIVATE Boost::boost Eigen3::Eigen)
 endif()
