@@ -56,7 +56,8 @@ add_executable(
 
 
 if (WIN32)
-    target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
+    target_link_libraries(RunTests PRIVATE gtest gtest_main Boost::boost)
+    target_include_directories(RunTests PRIVATE ${EIGEN3_INCLUDE_DIR})
 else()
     target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
 endif()
