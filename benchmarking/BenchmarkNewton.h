@@ -26,7 +26,7 @@ static void BM_optimizeNewton(benchmark::State& state) {
     double t0 = td.testEvents[0];
     std::transform(td.testEvents.begin(), td.testEvents.end(), events.begin(),[&](auto& value){ return value - t0;});
 
-    auto setup = pp::utils::getPipelineSetup(events, hasTheta0, AR_ORDER, windowLength, delta, weightsProducer);
+    auto setup = pointprocess::utils::getPipelineSetup(events, hasTheta0, AR_ORDER, windowLength, delta, weightsProducer);
     auto datasetBuffer = DatasetBuffer(setup);
 
     unsigned int numberOfParams = AR_ORDER + hasTheta0 + 1; // AR_ORDER + hasTheta0 + 1
@@ -37,7 +37,7 @@ static void BM_optimizeNewton(benchmark::State& state) {
     auto rcHessian = Eigen::MatrixXd(numberOfParams,numberOfParams);
     auto xold = Eigen::VectorXd(numberOfParams);
     auto alpha = Eigen::VectorXd(numberOfParams);
-    auto vars = pp::TmpVars(
+    auto vars = pointprocess::TmpVars(
             gradient,
             hessian,
             rcGradient,
@@ -47,18 +47,17 @@ static void BM_optimizeNewton(benchmark::State& state) {
     );
 
     auto factory = OptimizersFactory();
-    auto igOptimizer = factory.create(PointProcessDistributions::InverseGaussian);
+    auto igOptimizer = factory.create(pointprocess::Distributions::InverseGaussian);
     auto x = Eigen::VectorXd(numberOfParams);
     x << 0.0188767,0.0229873, 1.05662, -0.327049, 0.769105, -0.644893, -0.0240915, 0.140929;
 
-    std::vector<std::shared_ptr<pp::RegressionResult>> results;
+    std::vector<std::shared_ptr<pointprocess::RegressionResult>> results;
     results.reserve(datasetBuffer.size());
     int time_step = 1;
 
 
     for (auto _ : state) {
         for (auto [currentTime,eventHappened, resetParameters,dataset] : datasetBuffer) {
-            pp::utils::logging::printProgress(currentTime, (double) time_step/ (double) datasetBuffer.size());
             time_step++;
             state.ResumeTiming();
             //  =========================== This code gets timed ======================
@@ -77,12 +76,14 @@ static void BM_optimizeNewton(benchmark::State& state) {
     double totalLikelihood = 0.0;
     double percentageOfConvergence = 0.0;
     double percentageOfCDFisOne = 0.0;
-    unsigned int i = 0;
     for (auto& res: results){
-        totalLikelihood += res->likelihood;
         if(std::isinf(res->likelihood)){
-            i++;
-            std::cout << i << std::endl;
+            std::cout << "Infinite likelihood detected" << std::endl;
+        }
+        else{
+            // FIXME; it still is infinite! Check the values of likelihood when the optimization procedure doesn't
+            // converge.
+            totalLikelihood += res->likelihood;
         }
         percentageOfConvergence += (double) res->converged;
         percentageOfCDFisOne += (double) res->cdfIsOne;

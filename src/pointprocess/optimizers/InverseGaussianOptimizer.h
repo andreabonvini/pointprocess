@@ -38,7 +38,7 @@ public:
 
     double computeLikel(const Eigen::VectorXd& x, const PointProcessDataset& dataset) override;
 
-    std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) override;
+    std::shared_ptr<pointprocess::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened) override;
 
     double estimate_x0(const PointProcessDataset& dataset) override;
 

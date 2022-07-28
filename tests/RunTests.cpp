@@ -12,6 +12,8 @@
 #include "TestOptimizers.h"
 #include "TestPipeline.h"
 #include "TestDatasetBuffer.h"
+#include "TestSpectral.h"
+#include "TestOptimizersFactory.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

@@ -54,7 +54,7 @@ namespace pointprocess::tests {
             WeightsProducer weightsProducer= WeightsProducer();
 
             // Create setup object to initialize DatasetBuffer
-            pp::PipelineSetup setup = pp::PipelineSetup(delta,events,hasTheta0,AR_ORDER,last_event_index,bins,bins_in_window,weightsProducer);
+            pointprocess::PipelineSetup setup = pointprocess::PipelineSetup(delta,events,hasTheta0,AR_ORDER,last_event_index,bins,bins_in_window,weightsProducer);
 
         };
 

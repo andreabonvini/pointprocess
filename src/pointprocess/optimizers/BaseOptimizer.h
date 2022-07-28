@@ -13,15 +13,17 @@
 #include <iostream>
 #include <cmath>
 #include <memory>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
+#include <deque>
+#include <utility>
 
 #include "../WeightsProducer.h"
 #include "../PointProcessDataset.h"
 #include "../InterEventDistributions.h"
 #include "../DatasetBuffer.h"
-#include <Eigen/Core>
-#include <Eigen/Eigenvalues>
-#include <deque>
-#include <utility>
+#include "../../external/indicators.h"
+
 
 
 #ifndef M_PI  // For Visual Studio
@@ -40,9 +42,9 @@ public:
      * "A point-process model of human heartbeat intervals: new definitions of heart rate and heart rate variability"
      * (Riccardo Barbieri, Eric C. Matten, Abdul Rasheed A. Alabi and Emery N. Brown) for further details.
      */
-    PointProcessDistributions distribution;
-    explicit BaseOptimizer(PointProcessDistributions distribution);
-    virtual ~BaseOptimizer() = default;
+    pointprocess::Distributions distribution;
+    explicit BaseOptimizer(pointprocess::Distributions distribution);
+    virtual ~BaseOptimizer();
 
     /*
      * This is the most important function of the BaseOptimizer class. It returns a RegressionResult object which
@@ -50,12 +52,14 @@ public:
      * implemented optimization algorithm consists of a combination of both the Raphson-Newton method or gradient
      * descent. TODO: Add Blog-Post to the scientific docs which explains the algorithm in detail.
      */
-    std::shared_ptr<pp::RegressionResult> optimizeNewton(
+    std::shared_ptr<pointprocess::RegressionResult> optimizeNewton(
             const PointProcessDataset& dataset,
             bool rightCensoring,
             unsigned long maxIter,
             Eigen::VectorXd& x,
-            pp::TmpVars& vars
+            pointprocess::TmpVars& vars,
+            double time = 0.0,
+            bool eventHappened = false
     );
 
     /*
@@ -64,7 +68,7 @@ public:
      * can change depending on the distribution (e.g. for the Inverse Gaussian we have to save the scale parameter kappa
      * too)
      */
-    virtual std::shared_ptr<pp::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood,  bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne);
+    virtual std::shared_ptr<pointprocess::RegressionResult> packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood,  bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened);
 
     /*
      * Compute a trivial estimate for the standard deviation (or kappa parameter for the Inverse Gaussian) based on the
@@ -122,12 +126,12 @@ public:
     /*
      * Call the optimizeNewton() method taking into account rightCensoring (or not)
      */
-    std::shared_ptr<pp::RegressionResult> singleRegression(PointProcessDataset& dataset, bool rightCensoring, unsigned int maxIter);
+    std::shared_ptr<pointprocess::RegressionResult> singleRegression(PointProcessDataset& dataset, bool rightCensoring, unsigned long maxIter);
 
     /*
      * Call the optimizeNewton() method multiple times based on the options defined in the PipelineSetup.
      */
-    std::vector<std::shared_ptr<pp::RegressionResult>> train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter);
+    std::vector<std::shared_ptr<pointprocess::RegressionResult>> train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter);
 };
 
 #endif //POINTPROCESS_BASEOPTIMIZER_H

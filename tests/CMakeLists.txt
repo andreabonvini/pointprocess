@@ -13,42 +13,53 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-
 find_package(Boost REQUIRED)
 find_package (Eigen3 3.3 REQUIRED)
 
 IF( NOT EIGEN3_INCLUDE_DIR )
     MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
 ENDIF()
-INCLUDE_DIRECTORIES ( "${EIGEN3_INCLUDE_DIR}" )
 
 include(GoogleTest)
 enable_testing()
 
 # We define a single executable (RunTests.cpp) that will run all the available tests.
+
+
 add_executable(
         RunTests RunTests.cpp
-        ../src/pointprocess/optimizers/BaseOptimizer.cpp
-        ../src/pointprocess/optimizers/BaseOptimizer.h
-        ../src/pointprocess/optimizers/GaussianOptimizer.cpp
-        ../src/pointprocess/optimizers/GaussianOptimizer.h
-        ../src/pointprocess/optimizers/InverseGaussianOptimizer.cpp
-        ../src/pointprocess/optimizers/InverseGaussianOptimizer.h
-        ../src/pointprocess/optimizers/LogNormalOptimizer.cpp
-        ../src/pointprocess/optimizers/LogNormalOptimizer.h
-        ../src/pointprocess/PointProcessUtils.cpp
-        ../src/pointprocess/PointProcessUtils.h
+        ../src/pointprocess/InterEventDistributions.h
         ../src/pointprocess/WeightsProducer.cpp
         ../src/pointprocess/WeightsProducer.h
         ../src/pointprocess/PointProcessDataset.cpp
         ../src/pointprocess/PointProcessDataset.h
+        ../src/pointprocess/RegressionPipeline.cpp
+        ../src/pointprocess/RegressionPipeline.h
+        ../src/pointprocess/optimizers/BaseOptimizer.cpp
+        ../src/pointprocess/optimizers/BaseOptimizer.h
+        ../src/pointprocess/optimizers/InverseGaussianOptimizer.cpp
+        ../src/pointprocess/optimizers/InverseGaussianOptimizer.h
+        ../src/pointprocess/optimizers/GaussianOptimizer.cpp
+        ../src/pointprocess/optimizers/GaussianOptimizer.h
+        ../src/pointprocess/optimizers/LogNormalOptimizer.cpp
+        ../src/pointprocess/optimizers/LogNormalOptimizer.h
+        ../src/pointprocess/OptimizersFactory.cpp
+        ../src/pointprocess/OptimizersFactory.h
+        ../src/pointprocess/PointProcessUtils.h
+        ../src/pointprocess/PointProcessUtils.cpp
         ../src/pointprocess/DatasetBuffer.cpp
         ../src/pointprocess/DatasetBuffer.h
+        ../src/pointprocess/spectral/spectral.cpp
+        ../src/pointprocess/spectral/spectral.h
+        ../src/external/indicators.h
 )
+
+
 if (WIN32)
-    target_link_libraries(RunTests gtest gtest_main Boost::boost)
+    target_link_libraries(RunTests PRIVATE gtest gtest_main Boost::boost)
+    target_include_directories(RunTests PRIVATE ${EIGEN3_INCLUDE_DIR})
 else()
-    target_link_libraries(RunTests gtest gtest_main Eigen3::Eigen Boost::boost)
+    target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
 endif()
 
 gtest_discover_tests(RunTests)

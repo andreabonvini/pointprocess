@@ -4,13 +4,16 @@
 
 #include "PointProcessUtils.h"
 
+#include <utility>
+#include <algorithm>
+
 // LCOV_EXCL_START
-pp::Stats::Stats(double ksDistance, double percOut, double autoCorr) : ksDistance(ksDistance), percOut(percOut),
+pointprocess::Stats::Stats(double ksDistance, double percOut, double autoCorr) : ksDistance(ksDistance), percOut(percOut),
                                                                     autoCorr(autoCorr) {}
 // LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
-pp::TmpVars::TmpVars(
+pointprocess::TmpVars::TmpVars(
     Eigen::VectorXd gradient,
     Eigen::MatrixXd hessian,
     Eigen::VectorXd rcGradient,
@@ -26,7 +29,7 @@ pp::TmpVars::TmpVars(
     alpha(std::move(alpha)){}
 // LCOV_EXCL_STOP
 
-pp::PipelineSetup::PipelineSetup(
+pointprocess::PipelineSetup::PipelineSetup(
             double delta,
             std::vector<double> events,
             bool hasTheta0,
@@ -45,67 +48,85 @@ pp::PipelineSetup::PipelineSetup(
             bins_in_window(biw),
             weightsProducer(weightsProducer) {}
 
+
+
+
 // LCOV_EXCL_START
-pp::RegressionResult::RegressionResult(
+pointprocess::RegressionResult::RegressionResult(
         double theta0,
         Eigen::VectorXd thetaP,
         double mu,
         double sigma,
         double lambda,
         double meanInterval,
-        long nIter,
+        unsigned long nIter,
         double likelihood,
         double maxGrad,
         bool converged,
-        bool cdfIsOne
+        bool cdfIsOne,
+        bool eventHappened,
+        double time
     ) :
-    theta0(theta0),
-    thetaP(std::move(thetaP)),
-    mu(mu),
-    sigma(sigma),
-    lambda(lambda),
-    meanInterval(meanInterval),
-    nIter(nIter),
-    likelihood(likelihood),
-    maxGrad(maxGrad),
-    converged(converged),
-    cdfIsOne(cdfIsOne){}
+        theta0(theta0),
+        thetaP(std::move(thetaP)),
+        mu(mu),
+        sigma(sigma),
+        lambda(lambda),
+        meanInterval(meanInterval),
+        nIter(nIter),
+        likelihood(likelihood),
+        maxGrad(maxGrad),
+        converged(converged),
+        cdfIsOne(cdfIsOne),
+        eventHappened(eventHappened),
+        time(time){}
+
+void pointprocess::RegressionResult::computeHRVIndices() {
+    double variance = pow(sigma, 2.0); // The standard deviation (sigma) of a random variable, sample,
+    // statistical population, data set, or probability distribution is the square root of its variance.
+    double var = variance * static_cast<double>(1e6); // from [s^2] to [ms^2]
+    auto poles = spectral::computePoles(thetaP, var, 1.0 / meanInterval);
+    hrvIndices = spectral::computeHeartRateVariabilityIndices(poles);
+}
 
 // I declare a virtual destructor just to have run-time type information (RTTI), which is needed
 // to guarantee polymorphic behaviour.
-pp::RegressionResult::~RegressionResult() = default;
+pointprocess::RegressionResult::~RegressionResult() = default;
 // LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
-pp::IGRegressionResult::IGRegressionResult(double theta0_,
-       const Eigen::VectorXd &thetaP_,
-       double mu,
-       double sigma,
-       double lambda,
-       double meanInterval,
-       long nIter,
-       double likelihood,
-       double maxGrad,
-       double kappa,
-       bool converged,
-       bool cdfIsOne)
+pointprocess::IGRegressionResult::IGRegressionResult(
+        double theta0_,
+        Eigen::VectorXd thetaP_,
+        double mu,
+        double sigma,
+        double lambda,
+        double meanInterval,
+        unsigned long nIter,
+        double likelihood,
+        double maxGrad,
+        double kappa,
+        bool converged,
+        bool cdfIsOne,
+        bool eventHappened,
+        double time)
     :
     kappa(kappa),
-    pp::RegressionResult(theta0_, thetaP_, mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad, converged,cdfIsOne) {}
+    pointprocess::RegressionResult(theta0_, std::move(thetaP_), mu, sigma, lambda, meanInterval, nIter, likelihood, maxGrad, converged,cdfIsOne,eventHappened, time) {}
 // LCOV_EXCL_STOP
 
 
 // LCOV_EXCL_START
-pp::Result::Result(
-    std::vector<std::shared_ptr<pp::RegressionResult>> results,
-    std::vector<double> taus,
-    PointProcessDistributions distribution,
-    unsigned char AR_ORDER,
-    bool hasTheta0,
-    double windowLength,
-    double delta,
-    double t0,
-    Stats stats
+pointprocess::Result::Result(
+        std::vector<std::shared_ptr<pointprocess::RegressionResult>> results,
+        std::vector<double> taus,
+        Distributions distribution,
+        unsigned char AR_ORDER,
+        bool hasTheta0,
+        double windowLength,
+        double delta,
+        double t0,
+        Stats stats
     ) :
     results(std::move(results)),
     taus(std::move(taus)),
@@ -118,8 +139,279 @@ pp::Result::Result(
     stats(stats) {}
 // LCOV_EXCL_STOP
 
+
+//TODO: test (maybe?)
 // LCOV_EXCL_START
-pp::Stats pp::utils::computeStats(std::vector<double> &taus) {
+void pointprocess::Result::computeHRVIndices(){
+
+
+    // Original MATLAB code:
+    /*
+            % warn==1 is OK
+            % warn~=1 warning:
+            %   mod(warn, 2) is the scale factor used to shrink the poles in case of instability (slightly less than 1 is fine)
+            %   bitand(floor(warn), 2) if powLF was negative (increase AR order?)
+            %   bitand(floor(warn), 4) if powHF was negative (increase AR order?)
+            warn = NaN(1,J);
+
+            for i = 1:J
+                if isnan(Thetap(1,i))
+                    continue;
+                end
+                [tot,comps,compsp,f,pole_freq,pole_pow,pole_res,poles,mod_scale] = spectral(Thetap(:,i), Var(i), fsamp(i), [], 0);
+                warn(i) = mod_scale;
+                pf = abs(pole_freq);
+                powLF(i) = sum(pole_pow((pf>0.04) & (pf<0.15)));
+                if powLF(i) <= 0
+                    powLF(i) = powLF(i-1);
+                    warn(i) = warn(i) + 2;
+                end
+                powHF(i) = sum(pole_pow((pf>0.15) & (pf<0.45)));
+                if powHF(i) <= 0
+                    powHF(i) = powHF(i-1);
+                    warn(i) = warn(i) + 4;
+                end
+                powVLF(i) = sum(pole_pow(pf<0.04));
+                powTot(i) = sum(pole_pow);
+            end
+
+            b = ceil(J/10);
+            if b > 1
+                b = hamming(min(21, b));
+                b = b/sum(b);
+                powLF = fliplr(filter(b,1,fliplr(filter(b,1,powLF))));
+                powHF = fliplr(filter(b,1,fliplr(filter(b,1,powHF))));
+                powVLF = fliplr(filter(b,1,fliplr(filter(b,1,powVLF))));
+                powTot = fliplr(filter(b,1,fliplr(filter(b,1,powTot))));
+            end
+
+            if nargin > 3 && dwsample ~= 1
+                powLF = decimate(powLF, dwsample, 'fir');
+                powHF = decimate(powHF, dwsample, 'fir');
+                powVLF = decimate(powVLF, dwsample, 'fir');
+                powTot = decimate(powTot, dwsample, 'fir');
+            end
+
+            bal = powLF ./ powHF;
+
+     */
+    // Hide cursor
+    indicators::show_console_cursor(false);
+    indicators::ProgressBar bar{
+            indicators::option::BarWidth{65},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"■"},
+            indicators::option::Lead{"■"},
+            indicators::option::Remainder{"-"},
+            indicators::option::End{" ]"},
+            indicators::option::PrefixText("Computing HRV indices: "),
+            indicators::option::ShowElapsedTime{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::ShowPercentage(true),
+            indicators::option::ForegroundColor{indicators::Color::green},
+            indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
+    };
+
+
+    Eigen::VectorXd powLFVector(results.size());
+    Eigen::VectorXd powHFVector(results.size());
+
+    double lastValidPowLF = 1e-10;
+    double lastValidPowHF = 1e-10;
+    for(int i = 0; i < results.size(); i++){
+        results[i]->computeHRVIndices();
+        if (results[i]->hrvIndices.powLF <= 0){
+            results[i]->hrvIndices.powLF = lastValidPowLF;
+        }
+        lastValidPowLF = results[i]->hrvIndices.powLF;
+
+        powLFVector(i) = results[i]->hrvIndices.powLF;
+
+        if (results[i]->hrvIndices.powHF <= 0){
+            results[i]->hrvIndices.powHF = lastValidPowHF;
+        }
+        lastValidPowHF = results[i]->hrvIndices.powHF;
+
+        powHFVector(i) = results[i]->hrvIndices.powHF;
+
+
+        if (i % static_cast<int>(static_cast<double>(results.size()) / 100.0) == 0 || i == (results.size() - 1)){
+            auto prog = static_cast<size_t>(static_cast<double>(i + 1) / static_cast<double>(results.size()) * 100 );
+            bar.set_progress(prog);
+        }
+    }
+    /*
+    b = ceil(J/10);
+    if b > 1
+    b = hamming(min(21, b));
+    b = b/sum(b);
+    powLF = fliplr(filter(b,1,fliplr(filter(b,1,powLF))));
+    powHF = fliplr(filter(b,1,fliplr(filter(b,1,powHF))));
+    powVLF = fliplr(filter(b,1,fliplr(filter(b,1,powVLF))));
+    powTot = fliplr(filter(b,1,fliplr(filter(b,1,powTot))));
+    end
+
+    if nargin > 3 && dwsample ~= 1
+    powLF = decimate(powLF, dwsample, 'fir');
+    powHF = decimate(powHF, dwsample, 'fir');
+    powVLF = decimate(powVLF, dwsample, 'fir');
+    powTot = decimate(powTot, dwsample, 'fir');
+    end
+    */
+
+    // ================== Low pass filtering for powLF and powHF =========================
+
+    unsigned int b = std::ceil(static_cast<double>(results.size()) / 10.0);
+    Eigen::VectorXd hamming_window;
+    if (b>1){
+        hamming_window = pointprocess::spectral::hamming(std::min(static_cast<unsigned int>(21),b));
+        hamming_window = hamming_window.array() / hamming_window.array().sum();
+    }
+    Eigen::VectorXd one =  Eigen::VectorXd::Ones(1);
+
+    // ================ powHF =====================
+
+    powHFVector = pointprocess::spectral::filter1D(
+            powHFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+    powHFVector = pointprocess::spectral::filter1D(
+            powHFVector,
+            hamming_window,
+            one
+            ).array().reverse();
+
+    // ================ powLF =====================
+
+    powLFVector = pointprocess::spectral::filter1D(
+            powLFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+    powLFVector = pointprocess::spectral::filter1D(
+            powLFVector,
+            hamming_window,
+            one
+    ).array().reverse();
+
+    for(int i = 0; i < results.size(); i++){
+        results[i]->hrvIndices.powLF = powLFVector(i);
+        results[i]->hrvIndices.powHF = powHFVector(i);
+    }
+
+    hrvIndicesComputed = true;
+}
+
+// LCOV_EXCL_STOP
+
+
+//todo: test (maybe?)
+// LCOV_EXCL_START
+std::map<std::string, Eigen::MatrixXd> pointprocess::Result::toDict(){
+    assert(!results.empty());
+    std::map<std::string, Eigen::MatrixXd> out;
+    Eigen::MatrixXd eventHappenedVector(results.size(),1);
+    Eigen::MatrixXd meanIntervalVector(results.size(),1);
+    Eigen::MatrixXd thetaPMatrix(results.size(), results[0]->thetaP.size());
+    Eigen::MatrixXd theta0Vector(results.size(),1);
+    Eigen::MatrixXd sigmaVector(results.size(),1);
+    Eigen::MatrixXd lambdaVector(results.size(),1);
+    Eigen::MatrixXd cdfIsOneVector(results.size(),1);
+    Eigen::MatrixXd convergedVector(results.size(),1);
+    Eigen::MatrixXd nIterVector(results.size(),1);
+    Eigen::MatrixXd likelihoodVector(results.size(),1);
+    Eigen::MatrixXd maxGradVector(results.size(),1);
+    Eigen::MatrixXd timeVector(results.size(),1);
+    Eigen::MatrixXd muVector(results.size(),1);
+    Eigen::MatrixXd powVLFVector(results.size(),1);
+    Eigen::MatrixXd powLFVector(results.size(),1);
+    Eigen::MatrixXd powHFVector(results.size(),1);
+
+
+    for(int i = 0; i < results.size(); i++){
+
+        nIterVector(i) = static_cast<double>(results[i]->nIter);
+        eventHappenedVector(i) = results[i]->eventHappened;
+        convergedVector(i) = results[i]->converged;
+        cdfIsOneVector(i) = results[i]->cdfIsOne;
+        timeVector(i) = t0 + results[i]->time;
+        muVector(i) = results[i]->mu;
+        likelihoodVector(i) = results[i]->likelihood;
+        sigmaVector(i) = results[i]->sigma;
+        lambdaVector(i) = results[i]->lambda;
+        meanIntervalVector(i) = results[i]->meanInterval;
+        maxGradVector(i) = results[i]->maxGrad;
+
+        for(int j = 0; j < results[i]->thetaP.size(); j++){
+            thetaPMatrix(i, j) = results[i]->thetaP(j);
+        }
+        if(hasTheta0) {
+            theta0Vector(i) = results[i]->lambda;
+        }
+
+        if(hrvIndicesComputed){
+            powVLFVector(i) = results[i]->hrvIndices.powVLF;
+            powLFVector(i) = results[i]->hrvIndices.powLF;
+            powHFVector(i) = results[i]->hrvIndices.powHF;
+        }
+
+    }
+
+    out["cdf_is_one"] = cdfIsOneVector;
+    out["sigma"] = sigmaVector;
+    out["lambda"] = lambdaVector;
+    out["event_happened"] = eventHappenedVector;
+    out["mean_interval"] = meanIntervalVector;
+    out["thetap"] = thetaPMatrix;
+    out["Likelihood"] = likelihoodVector;
+    out["n_iter"] = nIterVector;
+    out["converged"] = convergedVector;
+    out["max_grad"] = maxGradVector;
+    out["Time"] = timeVector;
+    out["Mu"] = muVector;
+
+    if (hasTheta0){
+        out["theta0"] = theta0Vector;
+    }
+
+    if(hrvIndicesComputed){
+        out["powVLF"] = powVLFVector;
+        out["powLF"] = powLFVector;
+        out["powHF"] = powHFVector;
+    }
+    return out;
+}
+// LCOV_EXCL_STOP
+
+// LCOV_EXCL_START
+pointprocess::Stats pointprocess::utils::computeStats(std::vector<double> &taus) {
+
+    auto coords = pointprocess::utils::getKsCoords(taus);
+    double ksDistance = (coords.z.array() - coords.lin.array()).abs().maxCoeff() / sqrt(2.0);
+    double percOut = 0.0;
+    for (long i = 0; i < coords.z.size(); i++) {
+        percOut += (double) coords.z[i] < coords.ll[i] || coords.z[i] > coords.lu[i];
+    }
+    double autoCorr = 0.0; // TODO: IMPLEMENT!
+    percOut = percOut / ((double) coords.z.size());
+    return {ksDistance, percOut, autoCorr};
+}
+// LCOV_EXCL_STOP
+
+pointprocess::KsCoords::KsCoords(
+            Eigen::VectorXd z_,
+            Eigen::VectorXd lin_,
+            Eigen::VectorXd lu_,
+            Eigen::VectorXd ll_
+    ){
+        z = std::move(z_);
+        lin = std::move(lin_);
+        lu = std::move(lu_);
+        ll = std::move(ll_);
+    }
+
+pointprocess::KsCoords pointprocess::utils::getKsCoords(std::vector<double> &taus) {
     std::vector<double> rescaledTimes;
     Eigen::VectorXd z(taus.size());
     for (long i = 0; i < taus.size(); i++) {
@@ -131,20 +423,12 @@ pp::Stats pp::utils::computeStats(std::vector<double> &taus) {
     auto lin = Eigen::VectorXd::LinSpaced(z.size(), 0.0, 1.0);
     auto lu = Eigen::VectorXd::LinSpaced(z.size(), 1.36 / sqrt(z.size()), 1.0 + 1.36 / sqrt(z.size()));
     auto ll = Eigen::VectorXd::LinSpaced(z.size(), -1.36 / sqrt(z.size()), 1.0 - 1.36 / sqrt(z.size()));
-    double ksDistance = (z.array() - lin.array()).abs().maxCoeff() / sqrt(2.0);
-    double percOut = 0.0;
-    double autoCorr = 0.0; // TODO: IMPLEMENT!
-    for (long i = 0; i < z.size(); i++) {
-        percOut += (double) z[i] < ll[i] || z[i] > lu[i];
-    }
-    percOut = percOut / ((double) z.size());
-    return Stats(ksDistance, percOut, autoCorr);
-
+    return {z, lin, lu, ll};
 }
-// LCOV_EXCL_STOP
 
 
-pp::PipelineSetup pp::utils::getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,
+
+pointprocess::PipelineSetup pointprocess::utils::getPipelineSetup(const std::vector<double> &events, bool hasTheta0_, unsigned char AR_ORDER_,
                  double windowLength, double delta, WeightsProducer weightsProducer) {
 
     // Consistency check
@@ -167,11 +451,11 @@ pp::PipelineSetup pp::utils::getPipelineSetup(const std::vector<double> &events,
     auto bins = (unsigned long) std::ceil(events[events.size() - 1] / delta);
     auto bins_in_window = (unsigned long) (windowLength / delta);
 
-    return pp::PipelineSetup(delta, events, hasTheta0_, AR_ORDER_, last_event_index, bins, bins_in_window,
-            weightsProducer);
+    return {delta, events, hasTheta0_, AR_ORDER_, last_event_index, bins, bins_in_window,
+            weightsProducer};
 }
 
-void pp::utils::computeTaus(std::vector<double> &taus, const std::vector<double> &lambdas, const PipelineSetup &setup) {
+void pointprocess::utils::computeTaus(std::vector<double> &taus, const std::vector<double> &lambdas, const PipelineSetup &setup) {
 
     unsigned long last_event_index = setup.last_event_index;
     double intL = 0.0;
@@ -212,67 +496,4 @@ void pp::utils::computeTaus(std::vector<double> &taus, const std::vector<double>
 }
 
 
-// LCOV_EXCL_START
-void pp::utils::serialize::ppResData2csv(Result &ppRes, const std::string &outputResultsName) {
-    // The main Regression Results will be saved at outputResultsName
-    std::ofstream csv(outputResultsName.c_str());
-    // Define header...
-    csv << ((ppRes.distribution == PointProcessDistributions::InverseGaussian)
-            ? "Time,Mu,Sigma,Kappa,Lambda,eventHappened,nIter,Likelihood,maxGrad,meanInterval,Theta0"
-            : "Time,Mu,Sigma,Lambda,eventHappened,nIter,Likelihood,maxGrad,meanInterval,Theta0");
-    for (long i = 0; i < ppRes.AR_ORDER; i++) {
-        csv << "," << "Theta" << std::to_string(i + 1);
-    }
-    csv << "\n";
-
-    if (ppRes.distribution == PointProcessDistributions::InverseGaussian) {
-        // In case we are serializing an InverseGaussian Regression Result we have to save also the Kappa parameter for
-        // each time step.
-        for (auto &res: ppRes.results) {
-            auto tmp = dynamic_cast<IGRegressionResult *>(res.get());
-            csv << ppRes.t0 + tmp->time << "," << tmp->mu << "," << tmp->sigma << "," << tmp->kappa << ","
-                << tmp->lambda << ","
-                << tmp->eventHappened << "," << tmp->nIter << "," << tmp->likelihood << "," << tmp->maxGrad
-                << "," << tmp->meanInterval << "," << tmp->theta0;
-            for (long i = 0; i < tmp->thetaP.size(); i++) {
-                csv << "," << tmp->thetaP(i);
-            }
-            csv << "\n";
-        }
-    } else {
-        for (auto &res: ppRes.results) {
-            csv << ppRes.t0 + res->time << "," << res->mu << "," << res->sigma << "," << res->lambda << ","
-                << res->eventHappened << "," << res->nIter << "," << res->likelihood << "," << res->maxGrad
-                << res->meanInterval << "," << res->theta0;
-            for (long i = 0; i < res->thetaP.size(); i++) {
-                csv << "," << res->thetaP(i);
-            }
-            csv << "\n";
-        }
-    }
-
-    csv.close();
-}
-// LCOV_EXCL_STOP
-
-// LCOV_EXCL_START
-void pp::utils::serialize::ppResTaus2csv(Result &ppRes, const std::string &outputTausName) {
-    std::ofstream taus(outputTausName.c_str());
-    taus << "Taus\n";
-    for (auto &tau: ppRes.taus) {
-        taus << tau << "\n";
-    }
-    taus.close();
-}
-// LCOV_EXCL_STOP
-
-// LCOV_EXCL_START
-void pp::utils::logging::printProgress(double currentTime, double percentage) {
-    int val = (int) (percentage * 100);
-    int lpad = (int) (percentage * PBWIDTH);
-    int rpad = PBWIDTH - lpad;
-    printf("\r%3d%% [%.*s%*s] (Current time: %f s)", val, lpad, PBSTR, rpad, "", currentTime);
-    fflush(stdout);
-}
-// LCOV_EXCL_STOP
 

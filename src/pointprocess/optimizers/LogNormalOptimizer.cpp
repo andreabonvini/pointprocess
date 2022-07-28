@@ -5,7 +5,7 @@
 #include "LogNormalOptimizer.h"
 
 
-LogNormalOptimizer::LogNormalOptimizer(): BaseOptimizer(PointProcessDistributions::LogNormal) {}
+LogNormalOptimizer::LogNormalOptimizer(): BaseOptimizer(pointprocess::Distributions::LogNormal) {}
 
 void LogNormalOptimizer::populateStartingPoint(Eigen::VectorXd& startingPoint){
     // Sigma = x[0]

@@ -13,13 +13,15 @@ export SHOW_COVERAGE="${SHOW_COVERAGE:-true}"
 BASE_DIR=$PWD
 
 # Configure
-cmake --preset gcc-coverage
+cmake --preset tests-with-coverage
 
 # Build
-cmake --build --preset gcc-coverage
+cmake --build --preset tests-with-coverage
 
-# Enter build directory
-cd build-ci
+
+# Create and enter build directory
+mkdir -p build-tests
+cd build-tests
 
 # Clean-up counters for any previous run.
 lcov --zerocounters --directory .
@@ -28,7 +30,7 @@ lcov --zerocounters --directory .
 ./tests/RunTests
 
 # Create coverage report by taking into account only the files contained in src/
-lcov --capture --directory tests/ -o coverage.info --include "$BASE_DIR/src/*" --gcov-tool "$GCOV"
+lcov --capture --directory tests/ -o coverage.info --include "$BASE_DIR/src/pointprocess/*" --gcov-tool "$GCOV"
 
 
 if [ "$SHOW_COVERAGE" = "true" ]; then

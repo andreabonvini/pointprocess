@@ -5,17 +5,21 @@
 #include "BaseOptimizer.h"
 
 
-BaseOptimizer::BaseOptimizer(PointProcessDistributions distribution){
+BaseOptimizer::BaseOptimizer(pointprocess::Distributions distribution){
     this->distribution = distribution;
 }
 
+BaseOptimizer::~BaseOptimizer() = default;
+
 // LCOV_EXCL_START
-std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
+std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
         const PointProcessDataset& dataset,
         bool rightCensoring,
         unsigned long maxIter,
         Eigen::VectorXd& x,
-        pp::TmpVars& vars
+        pointprocess::TmpVars& vars,
+        double time,
+        bool eventHappened
 ){
     double oldNegloglikel = INFINITY;
     double negloglikel;
@@ -60,7 +64,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
             std::cout << "negloglikelRc: " << negloglikelRc << std::endl;
             std::cout << "dataset.wt: " << dataset.wt << std::endl;
             std::cout << "maxGrad: " << maxGrad << std::endl;*/
-            negloglikel = 0.0; // FIXME:  Completely arbitrary!
+            negloglikel = 0.0; // FIXME:  This value is completely arbitrary!
             cdfIsOne = true;
             // FIXME: Are we sure this is what's happening?
             //  In case, how should we behave? We could force the distribution to have a longer tail.
@@ -157,13 +161,12 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::optimizeNewton(
         }
         iter++;
     }
-
-    return packResult(x,dataset,negloglikel, rightCensoring, iter, maxGrad, maxGrad < gradTol, cdfIsOne);
+    return packResult(x,dataset,negloglikel, rightCensoring, iter, maxGrad, maxGrad < gradTol, cdfIsOne, time, eventHappened);
 }
 // LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
-std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne) {
+std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened) {
 
     // Sigma = x[0]
     // Theta = x.segment(1,x.size() - 1)
@@ -178,10 +181,11 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::Vec
     double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
     double sigma = x[0];
 
+    Eigen::VectorXd thetap = dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1);
 
-    return std::make_shared<pp::RegressionResult>(
+    return std::make_shared<pointprocess::RegressionResult>(
             dataset.hasTheta0 ? x[1] : 0.0,
-            dataset.hasTheta0 ? x.segment(2,x.size() - 2) : x.segment(1,x.size() - 1),
+            thetap,
             mu,
             sigma,
             (dataset.wt > 0.0) ? computeLambda(x,dataset) : 0.0,
@@ -190,7 +194,9 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::packResult(const Eigen::Vec
             negloglikelihood,
             maxGrad,
             converged,
-            cdfIsOne);
+            cdfIsOne,
+            eventHappened,
+            time);
 }
 // LCOV_EXCL_STOP
 
@@ -256,7 +262,7 @@ double BaseOptimizer::estimate_x0(const PointProcessDataset& dataset) {
 // LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
-std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProcessDataset& dataset, bool rightCensoring = false, unsigned int maxIter = 1000){
+std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::singleRegression(PointProcessDataset& dataset, bool rightCensoring = false, unsigned long maxIter = 1000){
 
     auto startingPoint = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
     populateStartingPoint(startingPoint);
@@ -270,7 +276,7 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProce
     auto rcHessian = Eigen::MatrixXd(dataset.AR_ORDER + dataset.hasTheta0 + 1,dataset.AR_ORDER + dataset.hasTheta0 + 1);
     auto xold = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
     auto alpha = Eigen::VectorXd(dataset.AR_ORDER + dataset.hasTheta0 + 1);
-    auto vars =  pp::TmpVars(
+    auto vars =  pointprocess::TmpVars(
             gradient,
             hessian,
             rcGradient,
@@ -287,11 +293,11 @@ std::shared_ptr<pp::RegressionResult> BaseOptimizer::singleRegression(PointProce
 
 
 // LCOV_EXCL_START
-std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter) {
+std::vector<std::shared_ptr<pointprocess::RegressionResult>> BaseOptimizer::train(DatasetBuffer& datasetBuffer, bool rightCensoring, unsigned long maxIter) {
 
     unsigned int numberOfParams = datasetBuffer.getNumberOfRegressionParameters() + getNumberOfAdditionalParams();
     // Initialize results vector and some useful variables
-    std::vector<std::shared_ptr<pp::RegressionResult>> results;
+    std::vector<std::shared_ptr<pointprocess::RegressionResult>> results;
     results.reserve(datasetBuffer.size());
 
     unsigned int tmpIter;
@@ -311,7 +317,7 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetB
     auto rcHessian = Eigen::MatrixXd(numberOfParams,numberOfParams);
     auto xold = Eigen::VectorXd(numberOfParams);
     auto alpha = Eigen::VectorXd(numberOfParams);
-    auto vars = pp::TmpVars(
+    auto vars = pointprocess::TmpVars(
             gradient,
             hessian,
             rcGradient,
@@ -322,9 +328,35 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetB
 
     bool firstRegression = true;
     unsigned long time_step = 1;
+
+    // Hide cursor
+    indicators::show_console_cursor(false);
+
+    indicators::ProgressBar bar{
+            indicators::option::BarWidth{65},
+            indicators::option::Start{"["},
+            indicators::option::Fill{"■"},
+            indicators::option::Lead{"■"},
+            indicators::option::Remainder{"-"},
+            indicators::option::End{" ]"},
+            // indicators::option::PostfixText{""}, // Brain emoji. \U0001F9E0,
+            indicators::option::PrefixText("Processing: "),
+            indicators::option::ShowElapsedTime{true},
+            indicators::option::ShowRemainingTime{true},
+            indicators::option::ShowPercentage(true),
+            indicators::option::ForegroundColor{indicators::Color::cyan},
+            indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}
+    };
+
     // Main loop
     for (auto [currentTime, eventHappened, resetParameters, dataset] : datasetBuffer){
-        pp::utils::logging::printProgress(currentTime, (double) time_step/ (double) datasetBuffer.size());
+
+
+        if (eventHappened || time_step == datasetBuffer.size()){
+            auto prog=static_cast<size_t> (static_cast<float>(time_step) / static_cast<float>(datasetBuffer.size()) * 100.0);
+            bar.set_progress(prog);
+        }
+
         time_step++;
         if (resetParameters){
 
@@ -346,7 +378,7 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetB
                 x[0] = tmp_x0;
             }
 
-            std::shared_ptr<pp::RegressionResult> tmpRes = optimizeNewton(dataset, false,( firstRegression ? 50000 : maxIter), x, vars);
+            std::shared_ptr<pointprocess::RegressionResult> tmpRes = optimizeNewton(dataset, false,( firstRegression ? 50000 : maxIter), x, vars);
             tmpIter = tmpRes -> nIter;
             resetParameters = false;
             firstRegression = false;
@@ -354,11 +386,8 @@ std::vector<std::shared_ptr<pp::RegressionResult>> BaseOptimizer::train(DatasetB
         }
 
         // Compute the actual parameters by applying right-censoring (if specified)
-        std::shared_ptr<pp::RegressionResult> result = optimizeNewton(dataset, rightCensoring, maxIter, x, vars);
+        std::shared_ptr<pointprocess::RegressionResult> result = optimizeNewton(dataset, rightCensoring, maxIter, x, vars, currentTime, eventHappened);
 
-        // Append metadata to result
-        result->time = currentTime; // TODO: Not really good practice, should be in the constructor.
-        result->eventHappened = eventHappened;
         if(resetParameters){
             result->nIter += tmpIter;
         }

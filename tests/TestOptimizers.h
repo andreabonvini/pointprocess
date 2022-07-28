@@ -17,25 +17,25 @@ namespace pointprocess::tests {
     namespace {
         // This is a Value-Parameterized fixture, check https://github.com/google/googletest/blob/main/docs/advanced.md
         //  for more details.
-        class TestOptimizersFixture : public testing::TestWithParam<PointProcessDistributions> {
+        class TestOptimizersFixture : public testing::TestWithParam<pointprocess::Distributions> {
         public:
             PointProcessDataset dataset = getTestDataset();
             int a = 3;
 
             std::vector<double> events = {};
             WeightsProducer wp = WeightsProducer(0.0);
-            pp::PipelineSetup set = pp::PipelineSetup(0.005,events,true,8,10,100,10,wp);
-            std::unordered_map<PointProcessDistributions, std::shared_ptr<BaseOptimizer>> dist2opt = {
-                    {PointProcessDistributions::Gaussian, std::make_shared<GaussianOptimizer>(GaussianOptimizer())},
-                    {PointProcessDistributions::InverseGaussian, std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer())},
-                    {PointProcessDistributions::LogNormal, std::make_shared<LogNormalOptimizer>(LogNormalOptimizer())}
+            pointprocess::PipelineSetup set = pointprocess::PipelineSetup(0.005,events,true,8,10,100,10,wp);
+            std::unordered_map<pointprocess::Distributions, std::shared_ptr<BaseOptimizer>> dist2opt = {
+                    {pointprocess::Distributions::Gaussian, std::make_shared<GaussianOptimizer>(GaussianOptimizer())},
+                    {pointprocess::Distributions::InverseGaussian, std::make_shared<InverseGaussianOptimizer>(InverseGaussianOptimizer())},
+                    {pointprocess::Distributions::LogNormal, std::make_shared<LogNormalOptimizer>(LogNormalOptimizer())}
             };
         };
 
 
         TEST_P(TestOptimizersFixture, TestGradientRc){
 
-            PointProcessDistributions dist = GetParam();
+            pointprocess::Distributions dist = GetParam();
 
             Eigen::VectorXd gradientRc(dataset.AR_ORDER + dataset.hasTheta0 + 1);
             Eigen::VectorXd approxGradientRc(dataset.AR_ORDER + dataset.hasTheta0 + 1);
@@ -46,7 +46,7 @@ namespace pointprocess::tests {
 
             auto dummyOpt = dist2opt[dist];
             dummyOpt->populateStartingPoint(xStart);
-            if(dist == PointProcessDistributions::Gaussian){
+            if(dist == pointprocess::Distributions::Gaussian){
                 xStart[0] = 0.1;
             }
 
@@ -82,7 +82,7 @@ namespace pointprocess::tests {
 
         TEST_P(TestOptimizersFixture, TestGradient){
 
-            PointProcessDistributions dist = GetParam();
+            pointprocess::Distributions dist = GetParam();
 
             Eigen::VectorXd gradient(dataset.AR_ORDER + dataset.hasTheta0 + 1);
             Eigen::VectorXd approxGradient(dataset.AR_ORDER + dataset.hasTheta0 + 1);
@@ -135,9 +135,9 @@ namespace pointprocess::tests {
 
             std::vector<double> events = {};
             auto wp = WeightsProducer(0.0);
-            auto set = pp::PipelineSetup(0.005,events,true,8,10,100,10,wp);
+            auto set = pointprocess::PipelineSetup(0.005,events,true,8,10,100,10,wp);
 
-            PointProcessDistributions dist = GetParam();
+            pointprocess::Distributions dist = GetParam();
             auto dummyOpt = dist2opt[dist];
             dummyOpt->populateStartingPoint(xStart);
 
@@ -172,10 +172,10 @@ namespace pointprocess::tests {
             // We need this function just to display the distribution information when checking the tests output.
             // https://google.github.io/googletest/reference/testing.html Check INSTANTIATE_TEST_SUITE_P section
             //  for more details.
-            std::unordered_map<PointProcessDistributions, std::string> map = {
-                {PointProcessDistributions::Gaussian, std::string("Gaussian")},
-                {PointProcessDistributions::InverseGaussian, std::string("InverseGaussian")},
-                {PointProcessDistributions::LogNormal, std::string("LogNormal")}
+            std::unordered_map<pointprocess::Distributions, std::string> map = {
+                {pointprocess::Distributions::Gaussian, std::string("Gaussian")},
+                {pointprocess::Distributions::InverseGaussian, std::string("InverseGaussian")},
+                {pointprocess::Distributions::LogNormal, std::string("LogNormal")}
             };
             return map[info.param];
         }
@@ -184,9 +184,9 @@ namespace pointprocess::tests {
                 TestGradientsAndHessians,
                 TestOptimizersFixture,
                 testing::Values(
-                        PointProcessDistributions::Gaussian,
-                        PointProcessDistributions::InverseGaussian,
-                        PointProcessDistributions::LogNormal
+                        pointprocess::Distributions::Gaussian,
+                        pointprocess::Distributions::InverseGaussian,
+                        pointprocess::Distributions::LogNormal
                 ),
                 getParamName
         );

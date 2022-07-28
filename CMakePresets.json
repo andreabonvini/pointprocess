@@ -2,15 +2,15 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 23,
+    "minor": 22,
     "patch": 0
   },
   "configurePresets": [
     {
-      "name": "gcc-coverage",
+      "name": "tests-with-coverage",
       "displayName": "Code coverage (GCC)",
       "description": "Enable code coverage on GCC-compatible compilers",
-      "binaryDir": "${sourceDir}/build-ci",
+      "binaryDir": "${sourceDir}/build-tests",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_CXX_FLAGS": "-fprofile-arcs -ftest-coverage -Ofast -DEIGEN_NO_DEBUG -fno-math-errno -ffast-math"
@@ -29,8 +29,8 @@
   ],
   "buildPresets": [
     {
-      "name": "gcc-coverage",
-      "configurePreset": "gcc-coverage",
+      "name": "tests-with-coverage",
+      "configurePreset": "tests-with-coverage",
       "configuration": "RelWithDebInfo"
     },
     {
