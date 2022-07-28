@@ -108,8 +108,8 @@ std::vector<pointprocess::spectral::Pole> pointprocess::spectral::computePoles(
     const Eigen::PolynomialSolver<double, Eigen::Dynamic>::RootsType &r = solver.roots();
 
     std::vector<std::complex<double>> polesValues;
-    for(auto& el: r){
-        polesValues.push_back(el);
+    for(int i = 0; i < r.size(); i++){
+        polesValues.push_back(r[i]);
     }
 
     // Sort the roots by absolute phase angle.

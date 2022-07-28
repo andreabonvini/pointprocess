@@ -56,10 +56,8 @@ add_executable(
 
 
 if (WIN32)
-    message("a")
-    target_link_libraries(RunTests PRIVATE gtest gtest_main Boost::boost)
+    target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
 else()
-    message("b")
     target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
 endif()
 
