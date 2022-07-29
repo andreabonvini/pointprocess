@@ -76,7 +76,7 @@ jobs:
         # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
         - uses: actions/checkout@v2
         - name: Install Boost
-          run: choco install boost-msvc-14.2
+          run: choco install boost-msvc-14.3
         - name: Install Eigen
           run: choco install eigen
         # Runs a single command using the runners shell
