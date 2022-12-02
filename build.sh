@@ -11,5 +11,4 @@ export CXX="${CXX:-g++}"
 cmake --preset build-release
 
 # Build
-cmake --build --preset build-release
-
+cmake --build --preset build-release --clean-first
