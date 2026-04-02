@@ -14,7 +14,7 @@ and the :code:`Taus` (integral of hazard-rate for each observed event) in order 
 The header of these files (supposing we processed the data with an :code:`AR_ORDER = 2`) will be:
 
 .. csv-table:: myData.csv
-   :file: _static/myDataExample.csv
+   :file: _static/MyDataExample.csv
    :widths: 8,8,8,8,14,8,14,8,8,8,8
    :header-rows: 1
 

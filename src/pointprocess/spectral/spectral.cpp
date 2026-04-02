@@ -49,7 +49,7 @@ pointprocess::spectral::HeartRateVariabilityIndices::HeartRateVariabilityIndices
     powHF = -1.0;
 
 }
-// LCOV_EXCL_END
+// LCOV_EXCL_STOP
 
 
 pointprocess::spectral::HeartRateVariabilityIndices
