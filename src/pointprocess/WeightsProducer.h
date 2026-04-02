@@ -6,15 +6,15 @@
 #define POINTPROCESS_WEIGHTSPRODUCER_H
 
 #include <Eigen/Core>
+#include <iostream>
 #include <vector>
 
-#include <iostream>
-
-class WeightsProducer {
-    public:
-        double alpha;
-        explicit WeightsProducer(double alpha_ = 0.02);
-        [[nodiscard]] Eigen::VectorXd produce(std::vector<double> target_distances) const;
+class WeightsProducer
+{
+  public:
+    double alpha;
+    explicit WeightsProducer(double alpha_ = 0.02);
+    [[nodiscard]] Eigen::VectorXd produce(std::vector<double> target_distances) const;
 };
 
-#endif //POINTPROCESS_WEIGHTSPRODUCER_H
+#endif // POINTPROCESS_WEIGHTSPRODUCER_H

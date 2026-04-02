@@ -52,19 +52,35 @@ pybind11_add_module(
         external/indicators.h
 )
 
-
 # ------------------------------------------- Setup dependencies---------------------------------------------
-find_package(Boost REQUIRED)
-find_package (Eigen3 3.3 REQUIRED)
 
-IF( NOT EIGEN3_INCLUDE_DIR )
-    MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
-ENDIF()
-
-if (WIN32)
-    target_link_libraries(pointprocess PRIVATE Boost::boost)
-    target_include_directories(pointprocess PRIVATE ${EIGEN3_INCLUDE_DIR})
-else()
-    target_link_libraries (pointprocess PRIVATE Boost::boost Eigen3::Eigen)
+# Find Boost (header-only libraries for math distributions)
+find_package(Boost QUIET)
+if(NOT Boost_FOUND)
+    message(FATAL_ERROR 
+        "Boost not found. Please install Boost:\n"
+        "  macOS (Homebrew):     brew install boost\n"
+        "  Ubuntu/Debian:        sudo apt-get install libboost-all-dev\n"
+        "  Fedora/RHEL:          sudo dnf install boost-devel\n"
+        "  Windows (Chocolatey): choco install boost-msvc-14.3\n"
+        "  Or download from:     https://www.boost.org/doc/libs/release/more/getting_started/\n"
+    )
 endif()
+
+# Find Eigen3
+find_package(Eigen3 3.3 QUIET)
+if(NOT Eigen3_FOUND)
+    message(FATAL_ERROR 
+        "Eigen3 not found. Please install Eigen3:\n"
+        "  macOS (Homebrew):     brew install eigen\n"
+        "  Ubuntu/Debian:        sudo apt-get install libeigen3-dev\n"
+        "  Fedora/RHEL:          sudo dnf install eigen3-devel\n"
+        "  Windows (Chocolatey): choco install eigen\n"
+        "  Or download from:     https://eigen.tuxfamily.org/\n"
+    )
+endif()
+
+# Link libraries
+target_include_directories(pointprocess PRIVATE ${Boost_INCLUDE_DIRS})
+target_link_libraries(pointprocess PRIVATE Eigen3::Eigen)
 

@@ -13,6 +13,15 @@ from sys import platform
 #  considerable gain in efficiency and to directly serialize all the needed information in a .csv file.
 #  (especially the spectral functions are extremely slow in Python when compared to a pure C++ implementation.
 
+# ================================================ HRV FREQUENCY BANDS ======================================
+# Heart Rate Variability frequency band definitions (in Hz)
+# Reference: Task Force of the European Society of Cardiology and the North American Society of Pacing and Electrophysiology
+HRV_VLF_UPPER = 0.04      # Very Low Frequency upper bound
+HRV_LF_LOWER = 0.04       # Low Frequency lower bound
+HRV_LF_UPPER = 0.15       # Low Frequency upper bound
+HRV_HF_LOWER = 0.15       # High Frequency lower bound
+HRV_HF_UPPER = 0.45       # High Frequency upper bound
+
 # ================================================ START SPECTRAL ======================================
 
 @dataclass
@@ -45,17 +54,17 @@ class HeartRateVariabilityIndices:
 
 def hrv_indices(analysis: SpectralAnalysis) -> HeartRateVariabilityIndices:
     powVLF = sum(
-        p.power for p in analysis.poles if np.abs(p.frequency) <= 0.04 and p.power > 0.0
+        p.power for p in analysis.poles if np.abs(p.frequency) <= HRV_VLF_UPPER and p.power > 0.0
     )
     powLF = sum(
         p.power
         for p in analysis.poles
-        if 0.04 < np.abs(p.frequency) <= 0.15 and p.power > 0.0
+        if HRV_LF_LOWER < np.abs(p.frequency) <= HRV_LF_UPPER and p.power > 0.0
     )
     powHF = sum(
         p.power
         for p in analysis.poles
-        if 0.15 < np.abs(p.frequency) < 0.45 and p.power > 0.0
+        if HRV_HF_LOWER < np.abs(p.frequency) < HRV_HF_UPPER and p.power > 0.0
     )
     return HeartRateVariabilityIndices(powVLF, powLF, powHF)
 
