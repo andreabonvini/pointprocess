@@ -19,7 +19,7 @@ The header of these files (supposing we processed the data with an :code:`AR_ORD
    :header-rows: 1
 
 .. csv-table:: myTaus.csv
-   :file: _static/myTausExample.csv
+   :file: _static/MyTausExample.csv
    :widths: 100
    :header-rows: 1
 
