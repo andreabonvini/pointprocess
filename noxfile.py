@@ -51,15 +51,53 @@ def coverage(session: nox.Session) -> None:
     """Generate code coverage report."""
     session.log("Generating coverage report...")
     
-    session.install("pytest", "pytest-cov")
-    
-    # Requires lcov and gcov on Unix systems
-    if platform.system() != "Windows":
-        session.run("bash", "build-and-run-cov.sh", external=True)
-        session.log("✓ Coverage report generated in 'build-tests/out/index.html'")
-    else:
+    # Requires lcov, gcov on Unix systems
+    if platform.system() == "Windows":
         session.log("⚠ Coverage report generation requires lcov (Unix-only)")
-        session.run(str(Path("build-tests") / "tests" / "RunTests"), external=True)
+        return
+    
+    # Build tests with coverage instrumentation
+    session.log("Building tests with coverage instrumentation...")
+    session.run("cmake", "--preset", "tests-with-coverage", external=True)
+    session.run("cmake", "--build", "--preset", "tests-with-coverage", external=True)
+    
+    build_dir = Path("build-tests")
+    
+    # Zero coverage counters
+    session.log("Zeroing coverage counters...")
+    session.run("lcov", "--zerocounters", "--directory", str(build_dir), external=True)
+    
+    # Run tests
+    session.log("Running tests...")
+    test_exe = build_dir / "tests" / "RunTests"
+    if not test_exe.exists():
+        session.log(f"⚠ Test executable not found at {test_exe}")
+        return
+    session.run(str(test_exe), external=True)
+    
+    # Capture coverage information
+    session.log("Capturing coverage information...")
+    coverage_file = build_dir / "coverage.info"
+    session.run(
+        "lcov",
+        "--capture",
+        "--directory", str(build_dir / "tests"),
+        "-o", str(coverage_file),
+        "--include", f"{Path.cwd()}/src/pointprocess/*",
+        "--gcov-tool", "gcov",
+        external=True,
+    )
+    
+    # Generate HTML report
+    session.log("Generating HTML coverage report...")
+    out_dir = build_dir / "out"
+    session.run("genhtml", str(coverage_file), "--output-directory", str(out_dir), external=True)
+    
+    index_file = out_dir / "index.html"
+    if index_file.exists():
+        session.log(f"✓ Coverage report generated: {index_file}")
+    else:
+        session.log("⚠ Coverage report may not have been generated")
 
 
 @nox.session(name="lint")
