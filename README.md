@@ -110,6 +110,8 @@ plt.ylabel("RR [ms]")
 plt.show()
 ```
 
+![](docs/images/events.png)
+
 ### Single Regression
 
 Fit a point process model to a fixed window of data:
@@ -155,6 +157,8 @@ plt.xlim(0, 0.5)
 plt.show()
 ```
 
+![](docs/images/spectral_single.png)
+
 ### Full Regression (Time-Varying Analysis)
 
 ```python
@@ -183,6 +187,8 @@ plt.legend()
 plt.show()
 ```
 
+![](docs/images/time_mu.png)
+
 For complete examples with visualizations, see the Jupyter Notebook in `examples/`.
 
 ## Contributing
@@ -204,10 +210,10 @@ MIT License - See [LICENSE](LICENSE) file for details.
 If you use this library in your research, please cite:
 
 ```bibtex
-@software{pointprocess2024,
+@software{pointprocess2026,
   author = {Bonvini, Andrea},
   title = {Point Process: Heart Rate Variability Analysis Library},
   url = {https://github.com/andreabonvini/pointprocess},
-  year = {2024}
+  year = {2026}
 }
 ```
