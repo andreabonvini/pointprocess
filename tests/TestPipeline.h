@@ -30,13 +30,11 @@ namespace pointprocess::tests {
         TEST(TestPipeline, TestComputeTaus){
             double delta = 0.005;
             std::vector<double> testEvents = {0.0,0.997,2.0,3.0,4.0,4.997,6.0,7.0,7.883,9.0,10.222};
-            bool rc = false;
             bool hasTheta0 = true;
             unsigned char ar_order = 2;
             unsigned long last_event_index = 5;
             unsigned long bins = 2045;
             unsigned long bins_in_window = 1000;
-            unsigned long maxIter = 1000;
             auto wp = WeightsProducer();
             auto setup = pointprocess::PipelineSetup(delta, testEvents, hasTheta0, ar_order, last_event_index, bins, bins_in_window, wp);
 
@@ -58,7 +56,7 @@ namespace pointprocess::tests {
             std::vector<double> taus;
             pointprocess::utils::computeTaus(taus, lambdas, setup);
             EXPECT_EQ(taus.size(), expected_taus.size());
-            for(int i = 0 ; i < taus.size(); i++) {
+            for(size_t i = 0 ; i < taus.size(); i++) {
                 EXPECT_FLOAT_EQ(taus[i], expected_taus[i]);
             }
         }

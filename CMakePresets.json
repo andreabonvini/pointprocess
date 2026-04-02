@@ -1,42 +1,71 @@
 {
-  "version": 3,
+  "version": 6,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 22,
+    "minor": 25,
     "patch": 0
   },
   "configurePresets": [
     {
-      "name": "tests-with-coverage",
-      "displayName": "Code coverage (GCC)",
-      "description": "Enable code coverage on GCC-compatible compilers",
-      "binaryDir": "${sourceDir}/build-tests",
+      "name": "default",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}"
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "description": "Build the full project in Release mode",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_CXX_FLAGS": "-fprofile-arcs -ftest-coverage -Ofast -DEIGEN_NO_DEBUG -fno-math-errno -ffast-math"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
-      "name": "build-release",
-      "displayName": "Release",
-      "description": "Build the full project in Release",
-      "binaryDir": "${sourceDir}/build",
+      "name": "tests",
+      "displayName": "Tests",
+      "description": "Build tests in RelWithDebInfo mode",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build-tests",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_FLAGS": "-Ofast -DEIGEN_NO_DEBUG -fno-math-errno -ffast-math"
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "tests-with-coverage",
+      "displayName": "Tests + Coverage",
+      "description": "Build tests with GCC/Clang code coverage instrumentation",
+      "inherits": "tests",
+      "cacheVariables": {
+        "ENABLE_COVERAGE": "ON"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "tests-with-coverage",
-      "configurePreset": "tests-with-coverage",
+      "name": "release",
+      "configurePreset": "release",
+      "configuration": "Release"
+    },
+    {
+      "name": "tests",
+      "configurePreset": "tests",
       "configuration": "RelWithDebInfo"
     },
     {
-      "name": "build-release",
-      "configurePreset": "build-release",
-      "configuration": "Release"
+      "name": "tests-with-coverage",
+      "configurePreset": "tests-with-coverage",
+      "configuration": "RelWithDebInfo"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "tests",
+      "configurePreset": "tests",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

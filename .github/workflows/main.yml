@@ -1,93 +1,239 @@
-# FIXME: All tests CI should be run with the Release version.
-# Continuous integration jobs
-name: CI
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+name: CI/CD
 
-  # Allows you to run this workflow manually from the Actions tab
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, main]
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Eigen 5.x is discovered via CMake config-mode (system package)
+  CMAKE_BUILD_PARALLEL_LEVEL: "4"
+
 jobs:
-  # This workflow contains two jobs that consists of three steps:
-  # 1) Installing the dependencies.
-  # 2) Building the library.
-  # 3) Running the tests.
-  # These steps are repeated for both an Ubuntu and a MacOS virtual machine.
-    build-Ubuntu:
-      # The type of runner that the job will run on
-      runs-on: ubuntu-latest
+  # ── Lint (runs once, fast) ──────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: pip install nox clang-tools
+      - run: nox -s lint
 
-      # Steps represent a sequence of tasks that will be executed as part of the job
-      steps:
-        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-        - uses: actions/checkout@v2
-        - name: Install Boost
-          run: |
-              sudo apt update
-              sudo apt install -y libboost-all-dev
-        - name: Install Eigen
-          run: |
-              sudo apt update
-              sudo apt install libeigen3-dev
-              sudo apt-get install -y lcov
-        # Runs a single command using the runners shell
-        - name: Build project with coverage flags, generate coverage report
-          run: SHOW_COVERAGE=false ./build-and-run-cov.sh
-        - name: Send converage report to codecov.
-          run: bash <(curl -s https://codecov.io/bash) -f build-tests/coverage.info || echo
-    build-MacOS:
-      # The type of runner that the job will run on
-      runs-on: macos-latest
+  # ── Test matrix ─────────────────────────────────────────────────
+  test:
+    name: Test · ${{ matrix.os }} · py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux
+          - os: ubuntu-24.04
+            python-version: "3.10"
+          - os: ubuntu-24.04
+            python-version: "3.11"
+          - os: ubuntu-24.04
+            python-version: "3.12"
+          - os: ubuntu-24.04
+            python-version: "3.13"
+          # macOS (Apple Silicon)
+          - os: macos-14
+            python-version: "3.12"
+          # Windows
+          - os: windows-latest
+            python-version: "3.12"
 
-      # Steps represent a sequence of tasks that will be executed as part of the job
-      steps:
-        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-        - uses: actions/checkout@v2
-        - name: Install Homebrew
-          run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        - name: Install Boost
-          run: brew install boost
-        - name: Install Eigen
-          run: brew install eigen
-        # Runs a single command using the runners shell
-        - name: Build
-          shell: bash
-          run: |
-            mkdir -p build && cd build
-            cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
-            make
-        # Runs a set of commands using the runners shell
-        - name: Run Tests
-          run: |
-            cd build/tests/
-            ./RunTests
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-    build-Windows:
-      # The type of runner that the job will run on
-      runs-on: windows-latest
-      # Steps represent a sequence of tasks that will be executed as part of the job
-      steps:
-        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-        - uses: actions/checkout@v2
-        - name: Install Boost
-          run: choco install boost-msvc-14.3
-        - name: Install Eigen
-          run: choco install eigen
-        # Runs a single command using the runners shell
-        - name: Build
-          shell: bash
-          run: |
-            mkdir -p build && cd build
-            cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
-            cmake --build .
-        # Runs a set of commands using the runners shell
-        - name: Run Tests
-          run: |
-            cd build/tests/Debug
-            ./RunTests
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libeigen3-dev libboost-dev lcov
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja eigen boost lcov
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y ninja eigen boost-msvc-14.3
+          # Chocolatey sets BOOST_ROOT as a machine env var, but GitHub Actions
+          # does not auto-propagate machine env vars to subsequent steps.
+          # Detect the install path and write it to GITHUB_ENV explicitly.
+          $boostDir = Get-ChildItem 'C:\local' -Directory |
+            Where-Object { $_.Name -match '^boost' } |
+            Sort-Object Name | Select-Object -Last 1
+          if ($boostDir) {
+            "BOOST_ROOT=$($boostDir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Install Python dependencies
+        run: pip install --upgrade pip nox
+
+      - name: Build
+        run: nox -s build
+
+      - name: Test
+        run: nox -s test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: build-tests/
+
+  # ── Documentation ───────────────────────────────────────────────
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: pip install sphinx sphinx-rtd-theme -r docs/requirements.txt
+      - run: sphinx-build -W -a -n docs/source docs/_build/html
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: documentation
+          path: docs/_build/html/
+          retention-days: 30
+
+  # ── Gate (branch-protection target) ─────────────────────────────
+  gate:
+    name: All Checks Pass
+    runs-on: ubuntu-24.04
+    needs: [lint, test, docs]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.docs.result }}" != "success" ]; then
+            echo "❌ One or more required checks failed"
+            exit 1
+          fi
+          echo "✅ All required checks passed"
+
+  # ── Coverage (main branch only) ─────────────────────────────────
+  coverage:
+    name: Code Coverage Report
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libeigen3-dev libboost-dev lcov
+      - run: pip install nox
+      - run: nox -s coverage
+      - uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d  # v5.4.2
+        with:
+          files: ./build-tests/coverage.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  # ── Build wheels (tag releases only) ────────────────────────────
+  build-wheels:
+    name: Build wheels · ${{ matrix.os }}
+    needs: [gate]
+    runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: macos-14
+          - os: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+
+      # macOS/Windows: install system deps on the host (cibuildwheel
+      # runs natively, so host packages are visible to the build).
+      # Linux: deps are installed inside the manylinux container via
+      # [tool.cibuildwheel.linux] before-all in pyproject.toml.
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja eigen boost
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y ninja eigen boost-msvc-14.3
+          $boostDir = Get-ChildItem 'C:\local' -Directory |
+            Where-Object { $_.Name -match '^boost' } |
+            Sort-Object Name | Select-Object -Last 1
+          if ($boostDir) {
+            "BOOST_ROOT=$($boostDir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@e5486e0b831d3a4954f271c2a053fbbc0e227d6a  # v2.23.4
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          retention-days: 30
+
+  # ── Publish (tag releases only) ────────────────────────────────
+  publish:
+    name: Publish to PyPI
+    needs: [build-wheels]
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-rc') && !contains(github.ref, '-alpha') && !contains(github.ref, '-beta')
+    environment: pypi
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: dist/*.whl
+          draft: false
+          prerelease: false

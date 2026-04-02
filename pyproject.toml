@@ -1,0 +1,80 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pointprocess"
+version = "0.1.0"
+description = "C++ implementation of point process models for heart rate variability analysis"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Andrea Bonvini", email = "a.bonvini96@gmail.com"},
+]
+keywords = ["pointprocess", "heart", "rate", "variability", "HRV"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "matplotlib>=3.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/andreabonvini/pointprocess"
+Documentation = "https://pointprocess.readthedocs.io"
+Repository = "https://github.com/andreabonvini/pointprocess.git"
+"Bug Tracker" = "https://github.com/andreabonvini/pointprocess/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "clang-tools>=14.0",
+    "nox>=2022.8.7",
+]
+docs = [
+    "sphinx>=4.5",
+    "sphinx-rtd-theme>=1.0",
+]
+
+[tool.scikit-build]
+cmake.version = ">=3.25,<4"
+cmake.build-type = "Release"
+wheel.packages = []
+
+[tool.scikit-build.cmake.define]
+EIGEN3_INCLUDE_DIR = "${EIGEN3_INCLUDE_DIR:-.}"
+CMAKE_INTERPROCEDURAL_OPTIMIZATION = "OFF"
+
+
+[tool.cibuildwheel]
+skip = "cp38-* pp* *musllinux*"
+manylinux-x86_64-image = "manylinux_2_28"
+archs = ["auto64"]
+build-verbosity = 1
+
+[tool.cibuildwheel.environment]
+CIBW_DEPENDENCY_VERSIONS = "only"
+
+[tool.cibuildwheel.linux]
+before-all = "yum update -y && yum install -y eigen3-devel boost-devel"
+
+[tool.cibuildwheel.macos]
+before-all = "brew install eigen boost"
+
+[tool.cibuildwheel.windows]
+before-all = "choco install -y eigen boost-msvc-14.3"

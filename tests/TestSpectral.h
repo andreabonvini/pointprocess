@@ -36,8 +36,11 @@ namespace pointprocess {
                     pointprocess::spectral::Pole(dummyComp,0.21,4.0,dummyComp)
             };
             auto result = pointprocess::spectral::computeHeartRateVariabilityIndices(dummyPoles);
+            // VLF: freq <= 0.04 (poles at 0.03 and 0.04) = 1.0 + 1.0 = 2.0
             EXPECT_EQ(result.powVLF, 2.0);
+            // LF: 0.04 < freq <= 0.15 (poles at 0.08 and 0.09) = 2.0 + 2.0 = 4.0
             EXPECT_EQ(result.powLF, 4.0);
+            // HF: 0.15 < freq <= 0.45 (poles at 0.20 and 0.21) = 4.0 + 4.0 = 8.0
             EXPECT_EQ(result.powHF, 8.0);
 
         }

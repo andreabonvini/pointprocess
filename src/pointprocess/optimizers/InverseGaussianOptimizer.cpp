@@ -86,7 +86,7 @@ double InverseGaussianOptimizer::computePDF(const Eigen::VectorXd& x, const Poin
     // Kappa = x[0]
     // Theta = x.segment(1,x.size() - 1)
     // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-    return exp(0.5 * log(x[0] / (2.0 * M_PI * pow(dataset.wt, 3.0))) - 0.5 * (x[0] * pow(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt), 2.0)) / (pow(x.segment(1,x.size() - 1).dot(dataset.xt), 2.0) * dataset.wt));
+    return exp(0.5 * log(x[0] / (2.0 * std::numbers::pi * pow(dataset.wt, 3.0))) - 0.5 * (x[0] * pow(dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt), 2.0)) / (pow(x.segment(1,x.size() - 1).dot(dataset.xt), 2.0) * dataset.wt));
 }
 
 double InverseGaussianOptimizer::computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset){
@@ -107,14 +107,14 @@ double InverseGaussianOptimizer::computeLikel(const Eigen::VectorXd& x, const Po
         return INFINITY; // Check constraints.
     else {
         return -dataset.eta.dot(
-                (((x[0] / (2.0 * M_PI * dataset.wn.array().pow(3.0))).sqrt().log() -
+                (((x[0] / (2.0 * std::numbers::pi * dataset.wn.array().pow(3.0))).sqrt().log() -
                 ((x[0] * (dataset.wn - (dataset.xn * x.segment(1, x.size() - 1))).array().pow(2.0)) /
                 (2.0 * (dataset.xn * x.segment(1, x.size() - 1)).array().pow(2.0) *
                 dataset.wn.array()))).matrix()));
     }
 }
 
-std::shared_ptr<pointprocess::RegressionResult> InverseGaussianOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened){
+std::shared_ptr<pointprocess::RegressionResult> InverseGaussianOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool /*rightCensoring*/, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened){
 
     // Kappa = x[0]
     // Theta = x.segment(1,x.size() - 1)
@@ -128,7 +128,6 @@ std::shared_ptr<pointprocess::RegressionResult> InverseGaussianOptimizer::packRe
     double meanInterval = dataset.eta.dot(dataset.wn) / dataset.eta.array().sum();
     double mu = dataset.xt.dot(x.segment(1,x.size() - 1));
     double sigma = sqrt(pow(mu,3.0) / x[0]); // Variance = Mu^3 /Kappa
-    double kappa = x[0];
 
     return std::make_shared<pointprocess::IGRegressionResult>(
             dataset.hasTheta0 ? x[1] : 0.0,

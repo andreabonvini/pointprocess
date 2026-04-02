@@ -12,6 +12,7 @@
 #include <numeric>
 #include <iostream>
 #include <cmath>
+#include <numbers>
 #include <memory>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -23,12 +24,6 @@
 #include "../InterEventDistributions.h"
 #include "../DatasetBuffer.h"
 #include "../../external/indicators.h"
-
-
-
-#ifndef M_PI  // For Visual Studio
-    #define M_PI 3.14159265358979323846
-#endif
 
 
 

@@ -69,7 +69,7 @@ double GaussianOptimizer::computePDF(const Eigen::VectorXd& x, const PointProces
     // Sigma = x[0]
     // Theta = x.segment(1,x.size() - 1)
     // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
-    return exp(log( 1.0 / (x[0] * sqrt(2.0 * M_PI))) - 0.5 * (x[0] * pow((dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0], 2.0)) );
+    return exp(log( 1.0 / (x[0] * sqrt(2.0 * std::numbers::pi))) - 0.5 * (x[0] * pow((dataset.wt - x.segment(1,x.size() - 1).dot(dataset.xt)) / x[0], 2.0)) );
 }
 
 double GaussianOptimizer::computeCDF(const Eigen::VectorXd& x, const PointProcessDataset& dataset) {
@@ -94,7 +94,7 @@ double GaussianOptimizer::computeLikel(const Eigen::VectorXd& x, const PointProc
         return INFINITY; // Check constraints.
     else {
         return -dataset.eta.dot(((
-                log(1.0 / (x[0] * sqrt(2.0 * M_PI)))
+                log(1.0 / (x[0] * sqrt(2.0 * std::numbers::pi)))
         -
         0.5 * (dataset.wn.array() - (dataset.xn * x.segment(1, x.size() - 1)).array()).pow(2.0) / x[0]
         ).matrix()));

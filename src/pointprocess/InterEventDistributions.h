@@ -5,14 +5,14 @@
 #ifndef POINTPROCESS_INTEREVENTDISTRIBUTIONS_H
 #define POINTPROCESS_INTEREVENTDISTRIBUTIONS_H
 
-
-namespace pointprocess{
-    enum Distributions : unsigned  char
+namespace pointprocess
+{
+    enum Distributions : unsigned char
     {
-        Gaussian = 0,
+        Gaussian        = 0,
         InverseGaussian = 1,
-        LogNormal = 2,
+        LogNormal       = 2,
 
     };
 }
-#endif //POINTPROCESS_INTEREVENTDISTRIBUTIONS_H
+#endif // POINTPROCESS_INTEREVENTDISTRIBUTIONS_H

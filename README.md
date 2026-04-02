@@ -1,205 +1,219 @@
-[![Documentation Status](https://readthedocs.org/projects/pointprocess/badge/?version=latest)](https://pointprocess.readthedocs.io/en/latest/?badge=latest)
-![Build Status](https://img.shields.io/github/workflow/status/andreabonvini/pointprocess/CI?event=push&label=Build&logo=Github-Actions)
-[![codecov.io](https://codecov.io/github/andreabonvini/pointprocess/coverage.svg?branch=master)](https://codecov.io/github/andreabonvini/pointprocess?branch=master)
+[![Docs Status](https://github.com/andreabonvini/pointprocess/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/andreabonvini/pointprocess/actions/workflows/main.yml)
+![Build Status](https://img.shields.io/github/actions/workflow/status/andreabonvini/pointprocess/main.yml?branch=main&label=Build&logo=Github-Actions)
+[![codecov](https://codecov.io/gh/andreabonvini/pointprocess/branch/main/graph/badge.svg)](https://codecov.io/gh/andreabonvini/pointprocess)
 
 ![ppbig](docs/images/ppbig.png)
 
-This repository contains a `C++` implementation of the `MATLAB` software provided by Riccardo Barbieri and Luca Citi [here](http://users.neurostat.mit.edu/barbieri/pphrv).
+# Point Process
 
-*Refer to the following papers for more details:*
+A modern C++ implementation of point process models for heart rate variability (HRV) analysis. Based on the MATLAB software by Riccardo Barbieri and Luca Citi ([http://users.neurostat.mit.edu/barbieri/pphrv](http://users.neurostat.mit.edu/barbieri/pphrv)).
 
-- [*A point-process model of human heartbeat intervals: new definitions of heart rate and heart rate
-  variability*](https://pubmed.ncbi.nlm.nih.gov/15374824/)
-- [*The time-rescaling theorem and its application to neural spike train data
-  analysis*](https://pubmed.ncbi.nlm.nih.gov/11802915/)
+**Key Features:**
+- Fast C++ implementation with Python bindings
+- Multiple distribution models (Inverse Gaussian, Gaussian, LogNormal)
+- State-space regression and spectral analysis
+- Easy-to-use Python API with NumPy/SciPy integration
+- Cross-platform support (Linux, Windows, macOS)
+- Distributed as pre-built wheels via PyPI
 
-# Requirements
+**Reference Papers:**
+- [A point-process model of human heartbeat intervals: new definitions of heart rate and heart rate variability](https://pubmed.ncbi.nlm.nih.gov/15374824/)
+- [The time-rescaling theorem and its application to neural spike train data analysis](https://pubmed.ncbi.nlm.nih.gov/11802915/)
 
-The project can be built with `CMake`, the only dependencies are [Eigen](https://eigen.tuxfamily.org)
-and [Boost](https://www.boost.org).
+## Installation
 
-Check [here](https://pointprocess.readthedocs.io/en/latest/installdependencies.html) for information on how to install these two packages.
+### From PyPI (Recommended)
 
-# Documentation
+```bash
+pip install pointprocess
+```
 
-The technical and scientific *documentation* for this repository is available [here](https://pointprocess.readthedocs.io/en/latest/). (WIP)
+Supported platforms:
+- Linux (x86_64) - Wheels distributed via PyPI
+- Windows (x86_64) - Wheels distributed via PyPI
+- macOS (Apple Silicon) - Wheels distributed via PyPI
+- Python 3.9–3.13
 
-In order to build the project you should follow the instructions in the `build.sh` script.
+### Development Setup
 
-## Quick Tour
+All development work uses **nox** for consistency across platforms. First install system dependencies:
 
-This brief tutorial shows how to fit a history-dependent *Inverse Gaussian* point process model to a temporal series of RR events.
+**macOS (Homebrew):**
+```bash
+brew install cmake boost eigen
+```
 
-You can find this example as a Jupyter Notebook in the `examples/` directory.
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get install -y cmake libboost-all-dev libeigen3-dev
+```
 
-Note: In order to call the Python bindings you need to first build the library.
+**Linux (Fedora/RHEL):**
+```bash
+sudo dnf install -y cmake boost-devel eigen3-devel
+```
+
+**Windows (Chocolatey):**
+```bash
+choco install cmake boost-msvc-14.3 eigen
+```
+
+Then clone and use nox:
+
+```bash
+git clone https://github.com/andreabonvini/pointprocess.git
+cd pointprocess
+pipx install nox
+nox
+```
+
+### Common Development Tasks
+
+All tasks use nox (no more bash scripts):
+
+```bash
+nox -s dev           # Set up development environment
+nox -s build         # Build C++ extension
+nox -s test          # Run test suite
+nox -s lint          # Code quality checks (clang-format)
+nox -s coverage      # Generate coverage report
+nox -s docs          # Build Sphinx documentation
+nox -s clean         # Clean build artifacts
+```
+
+## Documentation
+
+Full documentation available at [pointprocess.readthedocs.io](https://pointprocess.readthedocs.io/en/latest/)
+
+## Quick Start
+
+### Basic Usage
 
 ```python
-# Basic imports
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-# Path to the generated .so library (MacOs or Linux) or .dll (Windows)
-# Should be "build/src/" if you built the project with build.sh
-PATH_TO_LIB = "path/to/library/" 
-
-sys.path.append(PATH_TO_LIB)
-
-# Now we can import the Python byndings from the pointprocess library
 from pointprocess import (
     compute_single_regression,
     compute_full_regression,
     compute_spectral_analysis,
     Distributions,
-    Result,
-    RegressionResult,
-    get_ks_coords
 )
-```
 
-```python
-# Example: load and plot a series of RR events
+# Load RR interval data (time between heartbeats in seconds)
 rr = np.load("events.npy")
-events = np.array(rr[75:301])
-plt.plot(events[1:], 1000*np.diff(events),"b")
-plt.xlabel('time [s]')
-plt.ylabel('RR [ms]')
+events = rr[75:301]
+
+# Plot RR intervals
+plt.plot(events[1:], 1000 * np.diff(events), "b")
+plt.xlabel("Time [s]")
+plt.ylabel("RR [ms]")
+plt.show()
 ```
 
-<img src="docs/images/events.png" style="zoom:50%;" />
+![](docs/images/events.png)
 
 ### Single Regression
 
+Fit a point process model to a fixed window of data:
+
 ```python
-# Compute single regression on a subset of the RR intervals
-result_single_regression = compute_single_regression(
-    events = rr[75:301],
-    ar_order = 9,
-    has_theta0 = True,
-    right_censoring = False,
-    alpha = 0.02,
+result = compute_single_regression(
+    events=events,
+    ar_order=9,
+    has_theta0=True,
+    right_censoring=False,
+    alpha=0.02,
     distribution=Distributions.InverseGaussian,
     max_iter=10000
-    )
+)
 
-# You can now access to elements as:
-# result_single_regression.thetap
-# result_single_regression.theta0
-# result_single_regression.kappa
-# result_single_regression.likelihood
-# result_single_regression.mean_interval
-
+# Access results
+print(f"AR coefficients (θ_p): {result.thetap}")
+print(f"Intercept (θ_0): {result.theta0}")
+print(f"Shape parameter (κ): {result.kappa}")
+print(f"Log-likelihood: {result.likelihood}")
+print(f"Mean interval: {result.mean_interval}")
 ```
 
-#### Get Spectral info
+### Spectral Analysis
 
 ```python
-thetap = result_single_regression.thetap
-mean_interval = result_single_regression.mean_interval
-kappa = result_single_regression.kappa
-variance = result_single_regression.sigma**2
+# Compute power spectral density from model parameters
+analysis = compute_spectral_analysis(
+    thetap=result.thetap,
+    mean_interval=result.mean_interval,
+    variance=result.sigma ** 2
+)
 
+# Plot power spectral density
+plt.figure(figsize=(10, 6))
+plt.plot(analysis.frequencies, analysis.powers, "k", linewidth=0.8)
+for pole in analysis.poles:
+    plt.axvline(pole.frequency, color="r", linestyle="--", alpha=0.3)
 
-# Retrieve spectral info
-analysis = compute_spectral_analysis(thetap, mean_interval, variance, aggregate=False)
-
-# Plot stuff
-plt.figure(figsize=(8,6),dpi=100)
-colors = []
-for comp in analysis.comps:
-    p = plt.plot(analysis.frequencies, np.real(comp),linewidth=0.7)
-    colors.append(p[-1].get_color())
-    
-for i in range(len(analysis.poles)):
-    plt.vlines(analysis.poles[i].frequency,0,10000,colors[i],"--")
-    
-plt.plot(analysis.frequencies, analysis.powers, "k-",linewidth=0.8,label="Total PSD")
-plt.xlabel("f [Hz]")
-plt.ylabel("PSD [$ms^2$/Hz]")
-plt.legend()
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("Power [ms²/Hz]")
+plt.xlim(0, 0.5)
+plt.show()
 ```
 
-<img src="docs/images/spectral_single.png" style="zoom:50%;" />
+![](docs/images/spectral_single.png)
 
-### Full Regression
+### Full Regression (Time-Varying Analysis)
 
 ```python
-# Fit Inverse Gaussian distribution to RR by moving a 60.0 seconds windows and shifting it by 0.005 s at each step.
-# The mean of the ditribution will bi given by a 9th order AR model
-result = compute_full_regression(
+# Fit model across time with sliding window
+result_full = compute_full_regression(
     events=rr,
-    window_length=60.0,
-    delta=0.005,
+    window_length=60.0,      # 60 second window
+    delta=0.005,             # 5 ms step size
     ar_order=9,
     has_theta0=True,
     right_censoring=True,
-    alpha = 0.02,
+    alpha=0.02,
     distribution=Distributions.InverseGaussian,
-    max_iter = 1000
+    max_iter=1000
 )
 
-# Compute spectral info
-result.compute_hrv_indices()
+# Convert to dictionary for easier access
+d = result_full.to_dict()
 
-# Convert result to dictionary...
-d = result.to_dict()
-```
-
-```python
-# Plot first moment of the distribution in time, along with the discrete RR intervals 
-plt.figure(figsize=(6,4),dpi=120)
-plt.plot(d["Time"],d["Mu"],"b",linewidth=0.5,label="First moment of IG regression")
+# Plot time-varying mean
+plt.figure(figsize=(12, 4))
+plt.plot(d["Time"], d["Mu"], "b", linewidth=0.5, label="μ(t)")
 plt.xlabel("Time [s]")
-plt.ylabel("$\mu$ [s]")
-plt.plot(rr[1:],np.diff(rr),"r*",mew=0.01,label="RR interval")
+plt.ylabel("Mean Interval [s]")
 plt.legend()
+plt.show()
 ```
 
-<img src="docs/images/time_mu.png" style="zoom:80%;" />
+![](docs/images/time_mu.png)
 
-```python
-# Plot hazard rate
-plt.figure(figsize=(6,4),dpi=120)
-plt.plot(d["Time"],d["lambda"],"firebrick",linewidth=0.15,label="Hazard rate ($\lambda$)")
-plt.xlabel("Time [s]")
-plt.ylabel("Hazard rate ($\lambda$)")
-plt.legend()
+For complete examples with visualizations, see the Jupyter Notebook in `examples/`.
 
-# Same but just for a smaller number of samples...
-plt.figure(figsize=(6,4),dpi=120)
-s,e = 30200,31000
-plt.plot(d["Time"][s:e],d["lambda"][s:e],"firebrick",linewidth=0.5,label="Hazard rate ($\lambda$)")
-plt.xlabel("Time [s]")
-plt.ylabel("Hazard rate ($\lambda$)")
-plt.legend()
+## Contributing
+
+We welcome contributions! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `nox -s test`
+5. Submit a pull request
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you use this library in your research, please cite:
+
+```bibtex
+@software{pointprocess2026,
+  author = {Bonvini, Andrea},
+  title = {Point Process: Heart Rate Variability Analysis Library},
+  url = {https://github.com/andreabonvini/pointprocess},
+  year = {2026}
+}
 ```
-
-<img src="docs/images/time_lambda.png" style="zoom:67%;" />
-
-<img src="docs/images/time_lambda_little.png" style="zoom:67%;" />
-
-```python
-# Plot LF/HF ration
-plt.figure(figsize=(8,8))
-bal = d["powLF"] / d["powHF"]
-plt.plot(d["Time"],bal,"blue",linewidth=0.5)
-plt.ylim(-1,20)
-plt.ylabel("LF/HF")
-plt.xlabel("Time [s]")
-```
-
-<img src="docs/images/bal.png" style="zoom:50%;" />
-
-```python
-# Build KS plot to assess goodness of fit
-coords = get_ks_coords(result.taus)
-plt.figure(figsize=(5,5),dpi=100)
-plt.plot(coords.z, coords.inner, "k", linewidth=0.8)
-plt.plot(coords.lower, coords.inner, "b", linewidth=0.5)
-plt.plot(coords.upper, coords.inner, "b", linewidth=0.5)
-plt.plot(coords.inner, coords.inner, "r", linewidth=0.5)
-```
-
-<img src="docs/images/ks.png" style="zoom:72%;" />
