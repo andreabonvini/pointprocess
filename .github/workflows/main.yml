@@ -13,10 +13,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  CMAKE_VERSION: "3.28"
-  NINJA_VERSION: "1.11.1"
-
 jobs:
   # Test suite runs on all platforms
   test:
@@ -58,33 +54,26 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install CMake and Ninja
-        uses: cmake-action/cmake-action@v2
-        with:
-          cmake-version: ${{ env.CMAKE_VERSION }}
-          ninja-version: ${{ env.NINJA_VERSION }}
-
       # Platform-specific dependency installation
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeigen3-dev libboost-all-dev lcov
+          sudo apt-get install -y cmake ninja-build libeigen3-dev libboost-all-dev lcov
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install eigen boost lcov
+          brew install cmake ninja eigen boost lcov
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install -y eigen boost-msvc-14.3
+          choco install -y cmake ninja eigen boost-msvc-14.3
 
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install scikit-build-core cmake ninja nox
+          python -m pip install --upgrade pip setuptools wheel nox
 
       - name: Run all checks
         run: |
@@ -130,17 +119,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeigen3-dev libboost-all-dev
+          sudo apt-get install -y cmake ninja-build libeigen3-dev libboost-all-dev
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install eigen boost
+          brew install cmake ninja eigen boost
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install -y eigen boost-msvc-14.3
+          choco install -y cmake ninja eigen boost-msvc-14.3
 
       - name: Build wheels
         run: |
@@ -171,7 +160,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeigen3-dev libboost-all-dev clang-tools
+          sudo apt-get install -y cmake ninja-build libeigen3-dev libboost-all-dev clang-tools
 
       - name: Install Python tools
         run: |
@@ -197,7 +186,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeigen3-dev libboost-all-dev lcov
+          sudo apt-get install -y cmake ninja-build libeigen3-dev libboost-all-dev lcov
 
       - name: Generate coverage report
         run: |
