@@ -4,6 +4,8 @@
 
 #include "PointProcessDataset.h"
 
+#include <cassert>
+
 PointProcessDataset::PointProcessDataset(unsigned char   N_SAMPLES_,
                                          unsigned char   AR_ORDER_,
                                          bool            hasTheta0_,
@@ -124,9 +126,9 @@ void PointProcessDataset::toeplitz(const std::vector<double>& col,
                                    Eigen::MatrixXd&           toep)
 {
     assert(col[0] == row[0]);
-    for (long i = 0; i != col.size(); i++)
+    for (size_t i = 0; i != col.size(); i++)
     {
-        for (long j = 0; j != row.size(); j++)
+        for (size_t j = 0; j != row.size(); j++)
         {
             if (j >= i)
             {

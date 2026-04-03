@@ -29,7 +29,7 @@ struct testData{
     }
 };
 
-static PointProcessDataset getTestDataset() {
+inline PointProcessDataset getTestDataset() {
     std::deque<double> events = {
             700.1410, 701.0780, 702.0310, 702.9770, 703.8670, 704.8050, 705.7580, 706.7110, 707.6800,
             708.6480, 709.6170, 710.5550, 711.4920, 712.4140, 713.2580, 714.1090, 714.9530, 715.7190,
@@ -39,7 +39,7 @@ static PointProcessDataset getTestDataset() {
 }
 
 
-static testData getTestData(){
+inline testData getTestData(){
 
     Eigen::VectorXd testOptimalThetap(8);
     testOptimalThetap << 0.77065862,-0.10878393,0.10638951,-0.1348185,-0.42222736,0.05602624,0.47759602,-0.30823957;

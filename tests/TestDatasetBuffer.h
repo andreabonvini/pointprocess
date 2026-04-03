@@ -76,16 +76,16 @@ namespace pointprocess::tests {
                 wts.push_back(dataset.wt);
             }
 
-            for (int i = 0; i < dataBuffer.size(); ++i) {
+            for (size_t i = 0; i < dataBuffer.size(); ++i) {
                 EXPECT_FLOAT_EQ(expectedCts[i], cts[i]) << "Vectors expectedCts and cts differ at index " << i;
             }
-            for (int i = 0; i < dataBuffer.size(); ++i) {
+            for (size_t i = 0; i < dataBuffer.size(); ++i) {
                 EXPECT_FLOAT_EQ(expectedEhs[i], ehs[i]) << "Vectors expectedEhs and ehs differ at index " << i;
             }
-            for (int i = 0; i < dataBuffer.size(); ++i) {
+            for (size_t i = 0; i < dataBuffer.size(); ++i) {
                 EXPECT_FLOAT_EQ(expectedWts[i], wts[i]) << "Vectors expectedWts and wts differ at index " << i;
             }
-            for (int i = 0; i < dataBuffer.size(); ++i) {
+            for (size_t i = 0; i < dataBuffer.size(); ++i) {
                 EXPECT_FLOAT_EQ(expectedRps[i], rps[i]) << "Vectors expectedRps and rps differ at index " << i;
             }
 

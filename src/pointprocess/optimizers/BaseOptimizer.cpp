@@ -21,23 +21,18 @@ std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
         double time,
         bool eventHappened
 ){
-    double oldNegloglikel = INFINITY;
     double negloglikel;
-    double negloglikelRc;
+    double negloglikelRc = 0.0;
     double tmpNegloglikel;
     double tmpNegloglikelRc;
 
     double gradTol = 1e-5;
     double maxGrad = INFINITY;
     unsigned long iter = 0;
-    unsigned long newtonIter = 0;
-    unsigned long gradientDescentIter = 0;
     bool NEWTON_WORKED;
     bool GRADIENT_DESCENT_WORKED;
-    bool NOTHING_WORKED;
     bool cdfIsOne = false;
 
-    auto oldold = vars.xold;
     bool rightCensoring_ = rightCensoring && dataset.wt > 1e-5;
 
     while (iter < maxIter){
@@ -56,7 +51,7 @@ std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
         }
         maxGrad = vars.gradient.array().abs().maxCoeff();
 
-        if (std::isinf(negloglikelRc)){
+        if (rightCensoring_ && std::isinf(negloglikelRc)){
             // FIXME: If we enter this branch it may be cause of numerical problems (CDF becomes 1.0 since dataset.wt
             //  is too high and the current distribution (defined by the parameters x) isn't long-tailed enough.
        /*     std::cout << "\nSomething is wrong, the negative log-likelihood is INFINITY." << std::endl;
@@ -91,7 +86,6 @@ std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
         vars.eigenSolver.compute(vars.hessian);
         NEWTON_WORKED = false;
         GRADIENT_DESCENT_WORKED = false;
-        NOTHING_WORKED = false;
         if (vars.eigenSolver.eigenvalues().real().minCoeff() > 0.0){
             // Newton-Raphson with line-search
             for (char i = 0; i < 15; i++){
@@ -147,16 +141,15 @@ std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
         }
 
         if (NEWTON_WORKED){
-            newtonIter++;
+            // Newton-Raphson step was successful
         }
         else if (GRADIENT_DESCENT_WORKED){
-            gradientDescentIter++;
+            // Gradient descent step was successful
         }
         else{
             x = vars.xold;
             /*std::cout << "\nBAD -> negloglikel:" << negloglikel << std::endl;
             std::cout <<   "BAD ->     maxGrad:" << maxGrad << std::endl;*/
-            NOTHING_WORKED = true;
             break;
         }
         iter++;
@@ -166,7 +159,7 @@ std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::optimizeNewton(
 // LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
-std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool rightCensoring, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened) {
+std::shared_ptr<pointprocess::RegressionResult> BaseOptimizer::packResult(const Eigen::VectorXd& x, const PointProcessDataset& dataset, double negloglikelihood, bool /*rightCensoring*/, unsigned long nIter, double maxGrad, bool converged, bool cdfIsOne, double time, bool eventHappened) {
 
     // Sigma = x[0]
     // Theta = x.segment(1,x.size() - 1)

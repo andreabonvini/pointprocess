@@ -75,7 +75,7 @@ double LogNormalOptimizer::computePDF(const Eigen::VectorXd& x, const PointProce
     // Theta = x.segment(1,x.size() - 1)
     // rcMu = x.segment(1,x.size() - 1).dot(dataset.xt)
     return exp(
-            log(1.0 / (dataset.wt * x[0] * sqrt(2.0 * M_PI)))
+            log(1.0 / (dataset.wt * x[0] * sqrt(2.0 * std::numbers::pi)))
             -
             pow((log(dataset.wt) - log(x.segment(1,x.size() - 1).dot(dataset.xt))), 2.0) / (2.0 * pow(x[0],2.0))
     );
@@ -96,7 +96,7 @@ double LogNormalOptimizer::computeLikel(const Eigen::VectorXd& x, const PointPro
     if ((x[0] < 0.0) ||( (dataset.xn * x.segment(1,x.size() - 1)).array().minCoeff() < 0 ))
         return INFINITY; // Check constraints.
     else{
-        return - dataset.eta.dot( ((1.0 / (dataset.wn.array() * x[0] * sqrt(2.0 * M_PI))).log() - 0.5 * (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()).pow(2.0) / pow(x[0],2.0)).matrix() );
+        return - dataset.eta.dot( ((1.0 / (dataset.wn.array() * x[0] * sqrt(2.0 * std::numbers::pi))).log() - 0.5 * (dataset.wn.array().log() - (dataset.xn * x.segment(1,x.size() - 1)).array().log()).pow(2.0) / pow(x[0],2.0)).matrix() );
     }
 }
 

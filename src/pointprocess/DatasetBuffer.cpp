@@ -6,11 +6,11 @@
 
 DatasetBuffer::Iterator::Iterator(DatasetBuffer* ptr, unsigned long bin_index)
     : m_ptr(ptr),
-      bin_index(bin_index),
-      values(std::move(std::make_tuple(m_ptr->currentTime_,
+      values(std::make_tuple(m_ptr->currentTime_,
                                        m_ptr->eventHappened_,
                                        m_ptr->resetParameters_,
-                                       m_ptr->current_)))
+                                       m_ptr->current_)),
+      bin_index(bin_index)
 {
 }
 
