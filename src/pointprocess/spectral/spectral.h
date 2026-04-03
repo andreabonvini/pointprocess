@@ -7,10 +7,8 @@
 
 #include <complex>
 #include <vector>
+#include <numbers>
 #include <Eigen/Core>
-#ifndef M_PI  // For Visual Studio
-#define M_PI 3.14159265358979323846
-#endif
 
 namespace pointprocess::spectral{
     struct Pole{

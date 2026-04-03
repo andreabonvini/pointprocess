@@ -1,30 +1,19 @@
 
-# FetchContent is one of the modules which are part of the CMake distribution, we use it mainly to load an external
-#  project such as, in this case, GoogleTest.
+# --- Fetch GoogleTest (pinned to a stable release) ---
 include(FetchContent)
-
-# Automatically fetch googletest from github...
-# Note that the following declaration is valid today (December 4th, 2021), if CMake gives you trouble it may be 'cause
-#  the GIT_TAG changed (e.g. once it was "master" instead of "main"), so just check it on the official repo...
 FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        main
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.17.0
 )
 FetchContent_MakeAvailable(googletest)
 
-find_package(Boost REQUIRED)
-find_package (Eigen3 3.3 REQUIRED)
-
-IF( NOT EIGEN3_INCLUDE_DIR )
-    MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
-ENDIF()
+# --- Dependencies ---
+find_package(Boost CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 
 include(GoogleTest)
 enable_testing()
-
-# We define a single executable (RunTests.cpp) that will run all the available tests.
-
 
 add_executable(
         RunTests RunTests.cpp
@@ -54,12 +43,6 @@ add_executable(
         ../src/external/indicators.h
 )
 
-
-if (WIN32)
-    target_link_libraries(RunTests PRIVATE gtest gtest_main Boost::boost)
-    target_include_directories(RunTests PRIVATE ${EIGEN3_INCLUDE_DIR})
-else()
-    target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
-endif()
+target_link_libraries(RunTests PRIVATE gtest gtest_main Eigen3::Eigen Boost::boost)
 
 gtest_discover_tests(RunTests)

@@ -113,8 +113,7 @@ pointprocess::IGRegressionResult::IGRegressionResult(double          theta0_,
                                                      bool            cdfIsOne,
                                                      bool            eventHappened,
                                                      double          time)
-    : kappa(kappa),
-      pointprocess::RegressionResult(theta0_,
+    : pointprocess::RegressionResult(theta0_,
                                      std::move(thetaP_),
                                      mu,
                                      sigma,
@@ -126,7 +125,8 @@ pointprocess::IGRegressionResult::IGRegressionResult(double          theta0_,
                                      converged,
                                      cdfIsOne,
                                      eventHappened,
-                                     time)
+                                     time),
+      kappa(kappa)
 {
 }
 // LCOV_EXCL_STOP
@@ -229,7 +229,7 @@ void pointprocess::Result::computeHRVIndices()
 
     double lastValidPowLF = 1e-10;
     double lastValidPowHF = 1e-10;
-    for (int i = 0; i < results.size(); i++)
+    for (size_t i = 0; i < results.size(); i++)
     {
         results[i]->computeHRVIndices();
         if (results[i]->hrvIndices.powLF <= 0)
@@ -248,7 +248,7 @@ void pointprocess::Result::computeHRVIndices()
 
         powHFVector(i) = results[i]->hrvIndices.powHF;
 
-        if (i % static_cast<int>(static_cast<double>(results.size()) / 100.0) == 0
+        if (static_cast<int>(i) % static_cast<int>(static_cast<double>(results.size()) / 100.0) == 0
             || i == (results.size() - 1))
         {
             auto prog = static_cast<size_t>(static_cast<double>(i + 1)
@@ -301,7 +301,7 @@ void pointprocess::Result::computeHRVIndices()
     powLFVector
         = pointprocess::spectral::filter1D(powLFVector, hamming_window, one).array().reverse();
 
-    for (int i = 0; i < results.size(); i++)
+    for (size_t i = 0; i < results.size(); i++)
     {
         results[i]->hrvIndices.powLF = powLFVector(i);
         results[i]->hrvIndices.powHF = powHFVector(i);
@@ -335,7 +335,7 @@ std::map<std::string, Eigen::MatrixXd> pointprocess::Result::toDict()
     Eigen::MatrixXd                        powLFVector(results.size(), 1);
     Eigen::MatrixXd                        powHFVector(results.size(), 1);
 
-    for (int i = 0; i < results.size(); i++)
+    for (size_t i = 0; i < results.size(); i++)
     {
 
         nIterVector(i)         = static_cast<double>(results[i]->nIter);
@@ -350,7 +350,7 @@ std::map<std::string, Eigen::MatrixXd> pointprocess::Result::toDict()
         meanIntervalVector(i)  = results[i]->meanInterval;
         maxGradVector(i)       = results[i]->maxGrad;
 
-        for (int j = 0; j < results[i]->thetaP.size(); j++)
+        for (Eigen::Index j = 0; j < results[i]->thetaP.size(); j++)
         {
             thetaPMatrix(i, j) = results[i]->thetaP(j);
         }
@@ -402,7 +402,7 @@ pointprocess::Stats pointprocess::utils::computeStats(std::vector<double> &taus)
     auto   coords     = pointprocess::utils::getKsCoords(taus);
     double ksDistance = (coords.z.array() - coords.lin.array()).abs().maxCoeff() / sqrt(2.0);
     double percOut    = 0.0;
-    for (long i = 0; i < coords.z.size(); i++)
+    for (Eigen::Index i = 0; i < coords.z.size(); i++)
     {
         percOut += (double)coords.z[i] < coords.ll[i] || coords.z[i] > coords.lu[i];
     }
@@ -427,7 +427,7 @@ pointprocess::KsCoords pointprocess::utils::getKsCoords(std::vector<double> &tau
 {
     std::vector<double> rescaledTimes;
     Eigen::VectorXd     z(taus.size());
-    for (long i = 0; i < taus.size(); i++)
+    for (size_t i = 0; i < taus.size(); i++)
     {
         z[i] = taus[i];
     }

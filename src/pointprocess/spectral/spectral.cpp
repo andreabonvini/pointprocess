@@ -6,9 +6,10 @@
 #include <unsupported/Eigen/Polynomials>
 #include <iostream>
 #include <algorithm>
+#include <numbers>
 #include <utility>
 
-#define N_SAMPLES 2048
+static constexpr int N_SAMPLES = 2048;
 
 // LCOV_EXCL_START
 pointprocess::spectral::Pole::Pole(std::complex<double> pos_, double frequency_, double power_, std::complex<double> residual_){
@@ -147,10 +148,10 @@ std::vector<pointprocess::spectral::Pole> pointprocess::spectral::computePoles(
     // Compute poles residuals.
 
     std::vector<std::complex<double>> polesResiduals(polesValues.size());
-    for (int i = 0; i < polesValues.size(); i++){
+    for (size_t i = 0; i < polesValues.size(); i++){
         std::complex<double> prod1(1.0,0.0);
         std::complex<double> prod2(1.0,0.0);
-        for (int j = 0; j < polesValues.size(); j++){
+        for (size_t j = 0; j < polesValues.size(); j++){
             if (j!=i)
                 prod1 *= polesValues[i] - polesValues[j];
             prod2 *= 1.0/polesValues[i] - std::conj(polesValues[j]);
@@ -165,20 +166,20 @@ std::vector<pointprocess::spectral::Pole> pointprocess::spectral::computePoles(
     // Compute poles frequencies.
 
     std::vector<double> polesFrequencies(polesValues.size());
-    for(int i = 0; i < polesFrequencies.size(); i++){
-        polesFrequencies[i] = std::arg(polesValues[i]) / (2.0 * M_PI) * fSamp;
+    for(size_t i = 0; i < polesFrequencies.size(); i++){
+        polesFrequencies[i] = std::arg(polesValues[i]) / (2.0 * std::numbers::pi) * fSamp;
     }
 
     // Compute poles powers.
 
     std::vector<double> polesPowers(polesValues.size());
-    for(int i = 0; i < polesPowers.size(); i++){
+    for(size_t i = 0; i < polesPowers.size(); i++){
         polesPowers[i] = var * std::real(polesResiduals[i]);
     }
 
     std::vector<pointprocess::spectral::Pole> poles;
     poles.reserve(polesValues.size());
-    for (int i = 0; i < polesValues.size(); i++){
+    for (size_t i = 0; i < polesValues.size(); i++){
         poles.emplace_back(polesValues[i], polesFrequencies[i], polesPowers[i], polesResiduals[i]);
     }
     return poles;
@@ -207,7 +208,7 @@ pointprocess::spectral::computeSpectralAnalysis(
     auto fs = Eigen::VectorXcd ::LinSpaced(N_SAMPLES, -0.5, 0.5);
     // z = e^(-2πfT)
     // z: unit delay operator
-    auto z = (fs.array() * (2.0 * std::complex(0.0,1.0) *  M_PI)).exp();
+    auto z = (fs.array() * (2.0 * std::complex(0.0,1.0) *  std::numbers::pi)).exp();
     // σ^2 : Sample variance
     // T: sampling interval
     // Power(z) = (σ^2*T)/ |1+θ1*z^(-1)+...+θp*z^(-p)|^2
@@ -222,22 +223,22 @@ pointprocess::spectral::computeSpectralAnalysis(
     // std::vector<std::array<std::complex<double>, N_SAMPLES>> polesComps(polesValues.size());
     std::vector<Eigen::VectorXcd> polesComps(poles.size());
     std::vector<std::complex<double>> refPoles(poles.size());
-    for(int i = 0; i < refPoles.size(); i++){
+    for(size_t i = 0; i < refPoles.size(); i++){
         refPoles[i] = 1.0 / std::conj(poles[i].pos);
     }
 
-    for(int i = 0; i < poles.size(); i++){
+    for(size_t i = 0; i < poles.size(); i++){
         std::vector<std::complex<double>> pp(z.size());
-        for(int j = 0; j < z.size(); j++) {
+        for(Eigen::Index j = 0; j < z.size(); j++) {
             pp[j] = poles[i].residual * poles[i].pos / (z[j] -  poles[i].pos);
         }
         std::vector<std::complex<double>> refpp(z.size());
-        for(int j = 0; j < z.size(); j++) {
+        for(Eigen::Index j = 0; j < z.size(); j++) {
             refpp[j] = -std::conj(poles[i].residual) * refPoles[i] / (z[j] -  refPoles[i]);
         }
 
         polesComps[i].resize(N_SAMPLES);
-        for(int j = 0; j < z.size(); j++) {
+        for(Eigen::Index j = 0; j < z.size(); j++) {
             polesComps[i](j) = var / fSamp * (pp[j] + refpp[j]);
         }
     }
@@ -247,9 +248,9 @@ pointprocess::spectral::computeSpectralAnalysis(
     polesCompsAgg.push_back(polesComps[0]);
 
     size_t current_size_ = 0;
-    for(int i = 1; i < poles.size(); i++){
+    for(size_t i = 1; i < poles.size(); i++){
         if(areConj(poles[i].pos, poles[i-1].pos, 1e-5)){
-            for(int j = 0; j < polesCompsAgg[current_size_].size(); j++){
+            for(Eigen::Index j = 0; j < polesCompsAgg[current_size_].size(); j++){
                 polesCompsAgg[current_size_](j) += polesComps[i](j);
             }
         }
@@ -275,7 +276,7 @@ pointprocess::spectral::computeSpectralAnalysis(
 Eigen::VectorXd pointprocess::spectral::hamming(int n){
     Eigen::VectorXd w(n+1);
     for (int i = 0; i <= n; i++){
-        w(i) = 0.54 - 0.46*std::cos(2.0*M_PI*static_cast<float>(i)/n);
+        w(i) = 0.54 - 0.46*std::cos(2.0*std::numbers::pi*static_cast<float>(i)/n);
     }
     return w;
 }

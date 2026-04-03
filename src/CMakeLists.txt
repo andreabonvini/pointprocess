@@ -1,5 +1,4 @@
 
-# TODO: Should the following be added to CMakePresets.json? (Probably yes)
 # Enable vectorization for Eigen library
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-march=native" _march_native_works)
@@ -15,15 +14,12 @@ else()
     message(STATUS "No suitable compiler flag found for vectorization")
 endif()
 
-# FetchContent is one of the modules which are part of the CMake distribution, we use it mainly to load an external
-#  project such as, in this case, PyBind11 (needed to create Python bindings)
+# --- Fetch pybind11 (pinned to a stable release) ---
 include(FetchContent)
-
-# Automatically fetch pybind11 from github...
 FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG        master
+    pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG        v3.0.3
 )
 FetchContent_MakeAvailable(pybind11)
 
@@ -54,31 +50,11 @@ pybind11_add_module(
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
 
-# Find Boost (header-only libraries for math distributions)
-find_package(Boost QUIET)
-if(NOT Boost_FOUND)
-    message(FATAL_ERROR 
-        "Boost not found. Please install Boost:\n"
-        "  macOS (Homebrew):     brew install boost\n"
-        "  Ubuntu/Debian:        sudo apt-get install libboost-all-dev\n"
-        "  Fedora/RHEL:          sudo dnf install boost-devel\n"
-        "  Windows (Chocolatey): choco install boost-msvc-14.3\n"
-        "  Or download from:     https://www.boost.org/doc/libs/release/more/getting_started/\n"
-    )
-endif()
+# Find Boost (header-only, using config-mode to avoid deprecated FindBoost module)
+find_package(Boost CONFIG REQUIRED)
 
-# Find Eigen3
-find_package(Eigen3 3.3 QUIET)
-if(NOT Eigen3_FOUND)
-    message(FATAL_ERROR 
-        "Eigen3 not found. Please install Eigen3:\n"
-        "  macOS (Homebrew):     brew install eigen\n"
-        "  Ubuntu/Debian:        sudo apt-get install libeigen3-dev\n"
-        "  Fedora/RHEL:          sudo dnf install eigen3-devel\n"
-        "  Windows (Chocolatey): choco install eigen\n"
-        "  Or download from:     https://eigen.tuxfamily.org/\n"
-    )
-endif()
+# Find Eigen3 (config-mode, works with both Eigen 3.x and 5.x)
+find_package(Eigen3 CONFIG REQUIRED)
 
 # Link libraries
 target_include_directories(pointprocess PRIVATE ${Boost_INCLUDE_DIRS})

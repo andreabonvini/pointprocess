@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: C++",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
@@ -51,7 +52,7 @@ docs = [
 ]
 
 [tool.scikit-build]
-cmake.version = ">=3.22"
+cmake.version = ">=3.25"
 cmake.build-type = "Release"
 wheel.packages = ["src/pointprocess"]
 

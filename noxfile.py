@@ -7,15 +7,15 @@ from pathlib import Path
 # Python versions to test
 nox.options.default_venv_backend = "venv"
 DEFAULT_PYTHON = "3.11"
-PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12"]
+PYTHON_VERSIONS = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 
 @nox.session
 def build(session: nox.Session) -> None:
     """Build the project in Release mode."""
     session.log("Building pointprocess in Release mode...")
-    session.run("cmake", "--preset", "build-release", external=True)
-    session.run("cmake", "--build", "--preset", "build-release", external=True)
+    session.run("cmake", "--preset", "release", external=True)
+    session.run("cmake", "--build", "--preset", "release", external=True)
     session.log("✓ Build complete. Output in 'build/' directory")
 
 
@@ -147,8 +147,8 @@ def dev(session: nox.Session) -> None:
     
     # Build C++ extension using CMake
     session.log("Building C++ extension with CMake...")
-    session.run("cmake", "--preset", "build-release", external=True)
-    session.run("cmake", "--build", "--preset", "build-release", external=True)
+    session.run("cmake", "--preset", "release", external=True)
+    session.run("cmake", "--build", "--preset", "release", external=True)
     
     # Add built library to PYTHONPATH so it can be imported
     build_lib = Path("build/src").resolve()
