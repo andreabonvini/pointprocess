@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install -y ninja eigen
+          choco install -y ninja eigen boost-msvc-14.3
 
       - name: Install Python dependencies
         run: pip install --upgrade pip nox
@@ -183,7 +183,7 @@ jobs:
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
-        run: choco install -y ninja eigen
+        run: choco install -y ninja eigen boost-msvc-14.3
 
       - run: |
           pip install --upgrade pip build

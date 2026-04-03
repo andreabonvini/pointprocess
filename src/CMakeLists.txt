@@ -50,8 +50,17 @@ pybind11_add_module(
 
 # ------------------------------------------- Setup dependencies---------------------------------------------
 
-# Find Boost (header-only, using config-mode to avoid deprecated FindBoost module)
-find_package(Boost CONFIG REQUIRED)
+# Boost is used header-only (Boost.Math distributions).
+# Try CMake config-mode first (Homebrew, vcpkg, libboost-dev >= 1.70);
+# fall back to the legacy FindBoost module for setups that lack BoostConfig.cmake
+# (e.g. Chocolatey on Windows, which sets BOOST_ROOT instead).
+find_package(Boost CONFIG QUIET)
+if(NOT Boost_FOUND)
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 OLD)  # keep FindBoost module available
+    endif()
+    find_package(Boost REQUIRED)
+endif()
 
 # Find Eigen3 (config-mode, works with both Eigen 3.x and 5.x)
 find_package(Eigen3 CONFIG REQUIRED)
