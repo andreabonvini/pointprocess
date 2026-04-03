@@ -32,10 +32,6 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.12"
             arch: x86_64
-          # macOS x86_64
-          - os: macos-12
-            python-version: "3.11"
-            arch: x86_64
           # Windows x86_64
           - os: windows-latest
             python-version: "3.11"
@@ -94,8 +90,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            arch: x86_64
-          - os: macos-12
             arch: x86_64
           - os: windows-latest
             arch: x86_64
