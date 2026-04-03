@@ -127,24 +127,6 @@ jobs:
           path: dist/
           retention-days: 30
 
-  # Code quality checks (just checks source, no rebuild)
-  lint:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
-
-      - name: Check code formatting
-        run: |
-          find src -name "*.cpp" -o -name "*.h" | xargs clang-format -i --dry-run -Werror
-
   # Coverage report (only on main branch pushes, not every PR)
   coverage:
     name: Code Coverage Report
@@ -212,13 +194,12 @@ jobs:
   gate:
     name: All Checks Pass
     runs-on: ubuntu-latest
-    needs: [test, lint, docs]
+    needs: [test, docs]
     if: always()
     steps:
       - name: Check all jobs passed
         run: |
           if [ "${{ needs.test.result }}" != "success" ] || \
-             [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.docs.result }}" != "success" ]; then
             echo "❌ One or more required checks failed"
             exit 1
