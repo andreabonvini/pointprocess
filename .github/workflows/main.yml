@@ -77,8 +77,18 @@ jobs:
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
           choco install -y ninja eigen boost-msvc-14.3
+          # Chocolatey sets BOOST_ROOT as a machine env var, but GitHub Actions
+          # does not auto-propagate machine env vars to subsequent steps.
+          # Detect the install path and write it to GITHUB_ENV explicitly.
+          $boostDir = Get-ChildItem 'C:\local' -Directory |
+            Where-Object { $_.Name -match '^boost' } |
+            Sort-Object Name | Select-Object -Last 1
+          if ($boostDir) {
+            "BOOST_ROOT=$($boostDir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
       - name: Install Python dependencies
         run: pip install --upgrade pip nox
@@ -183,7 +193,15 @@ jobs:
 
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
-        run: choco install -y ninja eigen boost-msvc-14.3
+        shell: pwsh
+        run: |
+          choco install -y ninja eigen boost-msvc-14.3
+          $boostDir = Get-ChildItem 'C:\local' -Directory |
+            Where-Object { $_.Name -match '^boost' } |
+            Sort-Object Name | Select-Object -Last 1
+          if ($boostDir) {
+            "BOOST_ROOT=$($boostDir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
       - run: |
           pip install --upgrade pip build

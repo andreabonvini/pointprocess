@@ -9,14 +9,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 # --- Dependencies ---
-# Boost is used header-only (Boost.Math distributions).
-# Try CMake config-mode first (Homebrew, vcpkg, libboost-dev >= 1.70);
-# fall back to the legacy FindBoost module for setups that lack BoostConfig.cmake
-# (e.g. Chocolatey on Windows, which sets BOOST_ROOT instead).
+# Mirror ENV{BOOST_ROOT} into the CMake cache before any find_package call
+# so the legacy FindBoost module can locate headers on Windows/Chocolatey.
+if(DEFINED ENV{BOOST_ROOT} AND NOT DEFINED CACHE{BOOST_ROOT})
+    set(BOOST_ROOT "$ENV{BOOST_ROOT}" CACHE PATH "Boost root directory (from BOOST_ROOT env var)")
+endif()
+
 find_package(Boost CONFIG QUIET)
 if(NOT Boost_FOUND)
     if(POLICY CMP0167)
-        cmake_policy(SET CMP0167 OLD)  # keep FindBoost module available
+        cmake_policy(SET CMP0167 OLD)  # keep legacy FindBoost module available
     endif()
     find_package(Boost REQUIRED)
 endif()

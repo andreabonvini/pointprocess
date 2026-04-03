@@ -51,13 +51,20 @@ pybind11_add_module(
 # ------------------------------------------- Setup dependencies---------------------------------------------
 
 # Boost is used header-only (Boost.Math distributions).
-# Try CMake config-mode first (Homebrew, vcpkg, libboost-dev >= 1.70);
-# fall back to the legacy FindBoost module for setups that lack BoostConfig.cmake
-# (e.g. Chocolatey on Windows, which sets BOOST_ROOT instead).
+# Detection priority:
+#   1. CMake config-mode  – works on Homebrew, vcpkg, libboost-dev >= 1.70
+#   2. Legacy FindBoost   – works when BOOST_ROOT env var is set
+#                           (Chocolatey on Windows sets it as a machine env var;
+#                            GitHub Actions doesn't propagate that automatically,
+#                            so we mirror it into the CMake cache first.)
+if(DEFINED ENV{BOOST_ROOT} AND NOT DEFINED CACHE{BOOST_ROOT})
+    set(BOOST_ROOT "$ENV{BOOST_ROOT}" CACHE PATH "Boost root directory (from BOOST_ROOT env var)")
+endif()
+
 find_package(Boost CONFIG QUIET)
 if(NOT Boost_FOUND)
     if(POLICY CMP0167)
-        cmake_policy(SET CMP0167 OLD)  # keep FindBoost module available
+        cmake_policy(SET CMP0167 OLD)  # keep legacy FindBoost module available
     endif()
     find_package(Boost REQUIRED)
 endif()
