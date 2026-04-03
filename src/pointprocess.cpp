@@ -332,11 +332,23 @@ PYBIND11_MODULE(pointprocess, m) {
                         thetaP,meanInterval,variance,aggregate
                         );
             },
-            "This function performs a full point process regression on a series of events.",
+            "This function computes spectral analysis from AR model parameters.",
             py::arg("thetap"),
             py::arg("mean_interval"),
             py::arg("variance"),
-            py::arg("aggregate")
+            py::arg("aggregate") = true
+    );
+
+    m.def(
+            "compute_auto_correlation",
+            [](std::vector<double>& taus, int maxlag) {
+                return pointprocess::spectral::computeAutoCorrelation(taus, maxlag);
+            },
+            "Compute autocorrelation of quantile-normal-transformed rescaled times (taus) "
+            "for model goodness-of-fit assessment. Returns a vector of autocorrelation "
+            "coefficients for lags 1..maxlag.",
+            py::arg("taus"),
+            py::arg("maxlag") = 60
     );
 }
 

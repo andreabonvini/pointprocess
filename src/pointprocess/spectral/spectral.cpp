@@ -4,6 +4,7 @@
 
 #include "spectral.h"
 #include <unsupported/Eigen/Polynomials>
+#include <boost/math/special_functions/erf.hpp>
 #include <iostream>
 #include <algorithm>
 #include <numbers>
@@ -61,10 +62,10 @@ pointprocess::spectral::computeHeartRateVariabilityIndices(
     double powLF = 0.0;
     double powHF = 0.0;
     for (auto& pole : poles){
-        if (std::abs(pole.frequency) <= 0.05 && pole.power > 0.0){  // TODO: pole.power > 0 ? is needed?
+        if (std::abs(pole.frequency) <= 0.04 && pole.power > 0.0){
             powVLF += pole.power;
         }
-        else if  (std::abs(pole.frequency) > 0.05 && std::abs(pole.frequency) <= 0.15 && pole.power > 0.0){
+        else if  (std::abs(pole.frequency) > 0.04 && std::abs(pole.frequency) <= 0.15 && pole.power > 0.0){
             powLF += pole.power;
         }
         else if (std::abs(pole.frequency) > 0.15 && std::abs(pole.frequency) <= 0.45 && pole.power > 0.0){
@@ -123,27 +124,23 @@ std::vector<pointprocess::spectral::Pole> pointprocess::spectral::computePoles(
               });
 
     // Fix AR models that might have become slightly unstable due to the estimation process
-    //  using an exponential decay (see Stoica and Moses, Signal Processing 26(1) 1992)
-    // TODO: When should the following part be used?? (Check original implementation)
-    /*
-    std::vector<double> polesValuesAbs;
-    polesValuesAbs.reserve(polesValues.size());
-    for (auto& root : polesValues){
-        polesValuesAbs.push_back(std::abs(root));
+    // using an exponential decay (see Stoica and Moses, Signal Processing 26(1) 1992).
+    // Matches the MATLAB reference implementation by Barbieri & Citi.
+    // TODO: Review — validate numerically against MATLAB reference for edge cases.
+    double maxAbsPole = 0.0;
+    for (const auto& root : polesValues){
+        maxAbsPole = std::max(maxAbsPole, std::abs(root));
     }
-    double modScale = std::min(0.99 / *std::max_element(polesValuesAbs.begin(), polesValuesAbs.end()), 1.0);
+    double modScale = std::min(0.99 / maxAbsPole, 1.0);
     for(auto& root : polesValues){
         root *= modScale;
     }
-
-    Eigen::VectorXd cumProdMod = Eigen::VectorXd::Ones(thetaP.size()).array() * modScale;
-    double cp = 1.0;
-    for(auto& el : cumProdMod){
-        el *= cp;
-        cp *= el;
+    // Apply cumulative product scaling to thetaP: thetaP[i] *= modScale^(i+1)
+    double cumProd = 1.0;
+    for(Eigen::Index i = 0; i < thetaP.size(); i++){
+        cumProd *= modScale;
+        thetaP(i) *= cumProd;
     }
-    thetaP = thetaP.array() * cumProdMod.array();
-     */
 
     // Compute poles residuals.
 
@@ -196,14 +193,19 @@ pointprocess::spectral::computeSpectralAnalysis(
         double variance,
         bool aggregate) {
 
+    // Work on a local copy: computePoles may modify thetaP via the stability fix,
+    // and we don't want to mutate the caller's data.
+    Eigen::VectorXd localThetaP = thetaP;
+
     double var = variance * static_cast<double>(1e6); // from [s^2] to [ms^2]
     double fSamp = 1.0 / meanInterval;
 
-    auto one = Eigen::VectorXd::Ones((long) 1);
-    Eigen::VectorXd ar(thetaP.size() + 1);
-    ar << one, - thetaP;  // ar <- [1, -θ1, -θ2, ..., θp]
+    auto poles = computePoles(localThetaP, var, fSamp);
 
-    auto poles = computePoles(thetaP,var,fSamp);
+    // Build AR polynomial from (possibly stabilized) thetaP
+    auto one = Eigen::VectorXd::Ones((long) 1);
+    Eigen::VectorXd ar(localThetaP.size() + 1);
+    ar << one, - localThetaP;
 
     auto fs = Eigen::VectorXcd ::LinSpaced(N_SAMPLES, -0.5, 0.5);
     // z = e^(-2πfT)
@@ -322,5 +324,38 @@ Eigen::VectorXd pointprocess::spectral::filter1D(Eigen::VectorXd& x, Eigen::Vect
 
     return result;
 
+}
+
+
+Eigen::VectorXd pointprocess::spectral::computeAutoCorrelation(std::vector<double>& taus, int maxlag){
+    // Transform taus to uniform on (0,1]: Z = 1 - exp(-taus)
+    // Then map to standard normal via inverse error function: N = erfinv(2*Z - 1)
+    // Then compute autocorrelation of (N - mean(N)) for lags 1..maxlag.
+
+    const auto n = static_cast<Eigen::Index>(taus.size());
+    constexpr double small = 1e-5;
+
+    Eigen::VectorXd N(n);
+    for (Eigen::Index i = 0; i < n; i++){
+        double z = 1.0 - std::exp(-taus[static_cast<size_t>(i)]);
+        z = std::clamp(z, small, 1.0 - small);
+        N(i) = boost::math::erf_inv(2.0 * z - 1.0);
+    }
+
+    double mean = N.mean();
+    Eigen::VectorXd centered = N.array() - mean;
+    double variance = centered.squaredNorm(); // sum of squares (unnormalized)
+
+    // Direct autocorrelation computation: O(n * maxlag), efficient for typical maxlag << n.
+    Eigen::VectorXd autoCorr(maxlag);
+    for (int lag = 1; lag <= maxlag; lag++){
+        double sum = 0.0;
+        for (Eigen::Index i = 0; i < n - lag; i++){
+            sum += centered(i) * centered(i + lag);
+        }
+        autoCorr(lag - 1) = sum / variance;
+    }
+
+    return autoCorr;
 }
 

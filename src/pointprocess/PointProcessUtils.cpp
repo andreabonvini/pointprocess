@@ -89,7 +89,10 @@ void pointprocess::RegressionResult::computeHRVIndices()
     // statistical population, data set, or probability distribution is the square root of its
     // variance.
     double var   = variance * static_cast<double>(1e6); // from [s^2] to [ms^2]
-    auto   poles = spectral::computePoles(thetaP, var, 1.0 / meanInterval);
+    // Use a local copy: computePoles applies the stability fix which modifies thetaP,
+    // and we don't want to mutate the member data.
+    Eigen::VectorXd localThetaP = thetaP;
+    auto   poles = spectral::computePoles(localThetaP, var, 1.0 / meanInterval);
     hrvIndices   = spectral::computeHeartRateVariabilityIndices(poles);
 }
 
@@ -406,7 +409,12 @@ pointprocess::Stats pointprocess::utils::computeStats(std::vector<double> &taus)
     {
         percOut += (double)coords.z[i] < coords.ll[i] || coords.z[i] > coords.lu[i];
     }
-    double autoCorr = 0.0; // TODO: IMPLEMENT!
+    double autoCorr = 0.0;
+    if (!taus.empty()) {
+        auto autoCorrVec = spectral::computeAutoCorrelation(taus);
+        // Report the maximum absolute autocorrelation as a summary statistic.
+        autoCorr = autoCorrVec.cwiseAbs().maxCoeff();
+    }
     percOut         = percOut / ((double)coords.z.size());
     return {ksDistance, percOut, autoCorr};
 }
