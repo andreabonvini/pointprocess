@@ -13,7 +13,7 @@ A modern C++ implementation of point process models for heart rate variability (
 - Multiple distribution models (Inverse Gaussian, Gaussian, LogNormal)
 - State-space regression and spectral analysis
 - Easy-to-use Python API with NumPy/SciPy integration
-- Cross-platform support (Linux, macOS, Windows)
+- Cross-platform support (Linux, Windows, macOS local builds)
 - Distributed as pre-built wheels via PyPI
 
 **Reference Papers:**
@@ -29,9 +29,9 @@ pip install pointprocess
 ```
 
 Supported platforms:
-- Linux (x86_64)
-- macOS (x86_64, ARM64)
-- Windows (x86_64)
+- Linux (x86_64) - Wheels distributed via PyPI
+- Windows (x86_64) - Wheels distributed via PyPI
+- macOS (Intel & Apple Silicon) - Build locally or contact maintainer
 - Python 3.9–3.12
 
 ### Development Setup
@@ -66,6 +66,8 @@ cd pointprocess
 pipx install nox
 nox
 ```
+
+**Note on macOS:** Pre-built wheels are not distributed for macOS (macos runners are not for free on GitHub 🤷‍♂️). To use this library on macOS, you must build locally using the setup above. For questions about pre-built macOS binaries, contact me at a.bonvini96@gmail.com
 
 ### Common Development Tasks
 
@@ -109,6 +111,8 @@ plt.xlabel("Time [s]")
 plt.ylabel("RR [ms]")
 plt.show()
 ```
+
+![](docs/images/events.png)
 
 ### Single Regression
 
@@ -155,6 +159,8 @@ plt.xlim(0, 0.5)
 plt.show()
 ```
 
+![](docs/images/spectral_single.png)
+
 ### Full Regression (Time-Varying Analysis)
 
 ```python
@@ -183,6 +189,8 @@ plt.legend()
 plt.show()
 ```
 
+![](docs/images/time_mu.png)
+
 For complete examples with visualizations, see the Jupyter Notebook in `examples/`.
 
 ## Contributing
@@ -204,10 +212,10 @@ MIT License - See [LICENSE](LICENSE) file for details.
 If you use this library in your research, please cite:
 
 ```bibtex
-@software{pointprocess2024,
+@software{pointprocess2026,
   author = {Bonvini, Andrea},
   title = {Point Process: Heart Rate Variability Analysis Library},
   url = {https://github.com/andreabonvini/pointprocess},
-  year = {2024}
+  year = {2026}
 }
 ```
