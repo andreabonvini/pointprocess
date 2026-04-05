@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pointprocess"
-version = "0.1.0"
+version = "0.1.1"
 description = "C++ implementation of point process models for heart rate variability analysis"
 readme = "README.md"
 requires-python = ">=3.9"
