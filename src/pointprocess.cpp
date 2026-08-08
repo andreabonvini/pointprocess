@@ -2,6 +2,7 @@
 // Created by Andrea Bonvini on 18/05/21.
 //
 
+#include <stdexcept>
 #include "pointprocess/PointProcessUtils.h"
 #include "pointprocess/RegressionPipeline.h"
 #include "pointprocess/spectral/spectral.h"
@@ -26,6 +27,22 @@ pointprocess::Result computeFullRegression(
         pointprocess::Distributions distribution,
         unsigned int maxIter
 ){
+
+    // Safety checks to prevent crashes during full regression
+    if (events.size() < AR_ORDER + 1) {
+        throw std::invalid_argument("Not enough events to estimate the model. events.size() must be >= AR_ORDER + 1.");
+    }
+    if (windowLength <= 0.0 || delta <= 0.0) {
+        throw std::invalid_argument("windowLength and delta must be strictly positive.");
+    }
+    if (windowLength / delta < AR_ORDER + 1) {
+        throw std::invalid_argument("windowLength/delta must be >= AR_ORDER + 1 to ensure enough bins for the AR model.");
+    }
+    for (size_t i = 1; i < events.size(); ++i) {
+        if (events[i] < events[i - 1]) {
+            throw std::invalid_argument("Event times must be sorted in ascending order.");
+        }
+    }
 
     auto pip = RegressionPipeline(distribution, AR_ORDER, hasTheta0);
     return pip.fullRegression(
